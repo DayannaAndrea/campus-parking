@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Mi QR — Campus Parking{% endblock %}
+{% block content %}
+<h2>Tu código QR</h2>
+<p class="text-muted">Placa: <strong>{{ placa }}</strong> — muéstralo en portería o descárgalo.</p>
+
+<div class="card-cp p-4 text-center" style="max-width: 360px;">
+  <img src="{{ url_for('qr_imagen', placa=placa) }}" alt="QR {{ placa }}" class="img-fluid mb-3">
+  <a href="{{ url_for('qr_imagen', placa=placa) }}" download="{{ placa }}.png" class="btn btn-cp">Descargar QR</a>
+</div>
+{% endblock %}

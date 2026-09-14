@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Campus Parking{% endblock %}</title>
+  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-cp mb-4">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">🅿️ Campus Parking</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('registro') }}">Registro / QR</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('usuarios_registrados') }}">Vehículos</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('vigilante') }}">Vigilante</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('contingencia') }}">Contingencia</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('panel') }}">Panel de Cupos</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('disponibilidad') }}">Disponibilidad</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('reservar') }}">Reservar</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('historial') }}">Historial</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('reporte_seguridad') }}">Reporte Seguridad</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <footer>Campus Parking — Prototipo académico · Gestión de Proyectos de Software</footer>
+  <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

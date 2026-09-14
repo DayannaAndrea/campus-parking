@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Mis reservas — Campus Parking{% endblock %}
+{% block content %}
+<h2>Reservas de {{ placa }}</h2>
+{% if liberadas %}
+<div class="alert alert-warning">Se liberaron automáticamente {{ liberadas }} reserva(s) vencida(s) sin uso (no-show) en todo el sistema.</div>
+{% endif %}
+
+<table class="table">
+  <thead><tr><th>Fecha</th><th>Franja</th><th>Zona</th><th>Estado</th></tr></thead>
+  <tbody>
+    {% for r in reservas %}
+    <tr>
+      <td>{{ r.fecha }}</td>
+      <td>{{ r.hora_inicio }}–{{ r.hora_fin }}</td>
+      <td>{{ r.zona }}</td>
+      <td>
+        {% if r.estado == 'activa' %}<span class="badge bg-primary">Activa</span>
+        {% elif r.estado == 'usada' %}<span class="badge bg-success">Usada</span>
+        {% elif r.estado == 'liberada' %}<span class="badge bg-warning text-dark">Liberada (no-show)</span>
+        {% else %}<span class="badge bg-secondary">Cancelada</span>{% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted">Sin reservas registradas.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="{{ url_for('reservar') }}" class="btn btn-cp-outline">Nueva reserva</a>
+{% endblock %}

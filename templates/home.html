@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Inicio — Campus Parking{% endblock %}
+{% block content %}
+<div class="hero-cp mb-4">
+  <h1 class="fw-bold">Sistema de Control de Entradas y Cupos</h1>
+  <p class="mb-0">Verificación por QR, cupos en tiempo real y reservas por horario — todo en un solo sistema.</p>
+</div>
+
+<div class="row g-3 mb-4">
+  {% for z in panel %}
+  <div class="col-md-4">
+    <div class="zona-card {{ 'llena' if z.alerta_llena else '' }}">
+      <h5 class="fw-bold">{{ z.zona }}</h5>
+      <p class="mb-1">{{ z.disponibles }} cupos libres de {{ z.aforo_maximo }}</p>
+      <div class="progress progress-cp">
+        <div class="progress-bar" style="width: {{ z.porcentaje }}%; background: {{ '#B23A3A' if z.alerta_llena else '#FF7A45' }};"></div>
+      </div>
+      {% if z.alerta_llena %}<small class="text-danger fw-bold">⚠ Zona llena</small>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card-cp p-3 h-100">
+      <h5>Verificación QR</h5>
+      <p>Registra un vehículo, genera su QR y simula el escaneo del vigilante.</p>
+      <a href="{{ url_for('registro') }}" class="btn btn-cp btn-sm">Registrar vehículo</a>
+      <a href="{{ url_for('vigilante') }}" class="btn btn-cp-outline btn-sm mt-2">Ir al validador</a>
+      <a href="{{ url_for('usuarios_registrados') }}" class="btn btn-cp-outline btn-sm mt-2">Ver todos los registrados</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-cp p-3 h-100">
+      <h5>Panel de Cupos</h5>
+      <p>Cupos en tiempo real por zona, para portería y para el conductor.</p>
+      <a href="{{ url_for('panel') }}" class="btn btn-cp btn-sm">Ver panel</a>
+      <a href="{{ url_for('disponibilidad') }}" class="btn btn-cp-outline btn-sm mt-2">Vista del conductor</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card-cp p-3 h-100">
+      <h5>Reservas</h5>
+      <p>Reserva un cupo por franja horaria y consulta el historial.</p>
+      <a href="{{ url_for('reservar') }}" class="btn btn-cp btn-sm">Reservar</a>
+      <a href="{{ url_for('reporte_seguridad') }}" class="btn btn-cp-outline btn-sm mt-2">Reporte seguridad</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

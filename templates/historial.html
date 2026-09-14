@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Historial — Campus Parking{% endblock %}
+{% block content %}
+<h2>Historial de entradas y salidas</h2>
+
+<form method="get" class="d-flex gap-2 mb-3" style="max-width: 420px;">
+  <input type="text" class="form-control text-uppercase" name="placa" placeholder="Filtrar por placa" value="{{ placa or '' }}">
+  <button type="submit" class="btn btn-cp-outline">Buscar</button>
+</form>
+
+<a href="{{ url_for('historial_csv_export', placa=placa) }}" class="btn btn-cp mb-3">⬇ Exportar CSV</a>
+
+<table class="table">
+  <thead><tr><th>Tipo</th><th>Método</th><th>Fecha/Hora</th></tr></thead>
+  <tbody>
+    {% for f in filas %}
+    <tr>
+      <td>{{ f.tipo|upper }}</td>
+      <td>{{ f.metodo }}</td>
+      <td>{{ f.timestamp }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3" class="text-muted">Escribe una placa para ver su historial.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

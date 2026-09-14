@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Reservar — Campus Parking{% endblock %}
+{% block content %}
+<h2>Reservar cupo por franja horaria</h2>
+
+<div class="card-cp p-4" style="max-width: 480px;">
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Placa</label>
+      <input type="text" class="form-control text-uppercase" name="placa" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Zona</label>
+      <select class="form-select" name="zona">
+        {% for z in zonas %}
+        <option value="{{ z.nombre }}">{{ z.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Fecha</label>
+      <input type="date" class="form-control" name="fecha" required>
+    </div>
+    <div class="row">
+      <div class="col mb-3">
+        <label class="form-label">Hora inicio</label>
+        <input type="time" class="form-control" name="hora_inicio" required>
+      </div>
+      <div class="col mb-3">
+        <label class="form-label">Hora fin</label>
+        <input type="time" class="form-control" name="hora_fin" required>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-cp">Reservar</button>
+  </form>
+</div>
+<p class="text-muted mt-3">Si no ingresas dentro de los primeros 15 minutos de tu franja, el cupo se libera automáticamente (M3-02).</p>
+{% endblock %}

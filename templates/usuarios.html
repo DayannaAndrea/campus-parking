@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Vehículos registrados — Campus Parking{% endblock %}
+{% block content %}
+<h2>Vehículos registrados</h2>
+<p class="text-muted">Todos los usuarios que han generado su QR, con su estado actual (dentro/fuera del campus).</p>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Placa</th>
+      <th>Nombre</th>
+      <th>Rol</th>
+      <th>Estado</th>
+      <th>Último movimiento</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in usuarios %}
+    <tr>
+      <td><strong>{{ u.placa }}</strong></td>
+      <td>{{ u.nombre }}</td>
+      <td>{{ u.rol }}</td>
+      <td>
+        {% if u.estado == 'Dentro' %}
+          <span class="badge" style="background:#1F9D55;">Dentro</span>
+        {% else %}
+          <span class="badge bg-secondary">Fuera</span>
+        {% endif %}
+      </td>
+      <td>{{ u.ultimo_movimiento or '— nunca ha entrado —' }}</td>
+      <td>
+        <a href="{{ url_for('mi_qr', placa=u.placa) }}" class="btn btn-sm btn-cp-outline">Ver QR</a>
+        <a href="{{ url_for('historial', placa=u.placa) }}" class="btn btn-sm btn-cp-outline">Historial</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="text-muted">Aún no hay vehículos registrados. <a href="{{ url_for('registro') }}">Registra el primero</a>.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
