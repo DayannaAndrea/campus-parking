@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Vigilante — Campus Parking{% endblock %}
+{% block content %}
+<h2>Validador del vigilante</h2>
+<p class="text-muted">Escribe la placa que llega a portería (simula el escaneo del QR ya generado) y elige la zona a la que se dirige.</p>
+
+<div class="card-cp p-4 mb-4" style="max-width: 480px;">
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Placa</label>
+      <input type="text" class="form-control text-uppercase" name="placa" required autofocus>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Zona destino</label>
+      <select class="form-select" name="zona">
+        {% for z in zonas %}
+        <option value="{{ z.nombre }}">{{ z.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-cp">Validar / Escanear</button>
+  </form>
+</div>
+
+{% if resultado %}
+  <div class="card-cp p-4" style="max-width: 480px;">
+    {% if resultado.valido %}
+      <div class="badge-valido mb-2">✔ VÁLIDO</div>
+      <p><strong>{{ resultado.placa }}</strong> — {{ resultado.tipo|upper }} registrada.</p>
+      {% if resultado.reserva %}
+        <p class="text-success">Reserva vigente: {{ resultado.reserva.hora_inicio }}–{{ resultado.reserva.hora_fin }} en {{ resultado.reserva.zona }}.</p>
+      {% else %}
+        <p class="text-muted">Sin reserva vigente para esta hora.</p>
+      {% endif %}
+    {% else %}
+      <div class="badge-invalido mb-2">✘ INVÁLIDO</div>
+      <p>{{ resultado.mensaje }}</p>
+    {% endif %}
+    <small class="text-muted">Tiempo de validación: {{ resultado.duracion_ms }} ms</small>
+  </div>
+{% endif %}
+{% endblock %}

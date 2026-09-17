@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Métricas — Campus Parking{% endblock %}
+{% block content %}
+<h2>Métrica histórica de ocupación</h2>
+<table class="table">
+  <thead><tr><th>Zona</th><th>Entradas históricas registradas</th></tr></thead>
+  <tbody>
+    {% for d in datos %}
+    <tr><td>{{ d.zona }}</td><td>{{ d.entradas }}</td></tr>
+    {% else %}
+    <tr><td colspan="2" class="text-muted">Aún no hay datos suficientes.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,84 @@
+:root {
+  --navy: #1E2761;
+  --navy2: #141B4D;
+  --ice: #CADCFC;
+  --accent: #FF7A45;
+  --gray: #6B7280;
+  --lightbg: #F5F7FC;
+}
+body {
+  font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+  background: #FAFBFE;
+  color: #1B1F3B;
+}
+.navbar-cp {
+  background: var(--navy);
+}
+.navbar-cp .navbar-brand, .navbar-cp .nav-link {
+  color: #fff !important;
+}
+.navbar-cp .nav-link:hover {
+  color: var(--ice) !important;
+}
+.btn-cp {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+.btn-cp:hover {
+  background: #e8672f;
+  color: #fff;
+}
+.btn-cp-outline {
+  background: transparent;
+  border: 1.5px solid var(--navy);
+  color: var(--navy);
+  font-weight: 600;
+}
+.card-cp {
+  background: var(--lightbg);
+  border: none;
+  border-radius: 10px;
+}
+.hero-cp {
+  background: var(--navy);
+  color: #fff;
+  border-radius: 12px;
+  padding: 2.5rem;
+}
+.badge-valido {
+  background: #1F9D55;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+.badge-invalido {
+  background: #B23A3A;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+.zona-card {
+  border-radius: 10px;
+  padding: 1.2rem;
+  background: var(--lightbg);
+}
+.zona-card.llena {
+  background: #FCEFE8;
+  border: 1px solid var(--accent);
+}
+.progress-cp {
+  height: 10px;
+  border-radius: 6px;
+}
+footer {
+  color: var(--gray);
+  font-size: 0.85rem;
+  padding: 2rem 0 1rem;
+  text-align: center;
+}

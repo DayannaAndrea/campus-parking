@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Panel de Cupos — Campus Parking{% endblock %}
+{% block content %}
+<h2>Panel de cupos — pantalla de portería</h2>
+<p class="text-muted">Se actualiza sola cada 4 segundos (simula tiempo real).</p>
+
+<div id="panel" class="row g-3"></div>
+
+<script>
+async function cargarPanel() {
+  const res = await fetch("{{ url_for('api_cupos') }}");
+  const zonas = await res.json();
+  const cont = document.getElementById("panel");
+  cont.innerHTML = "";
+  zonas.forEach(z => {
+    const col = document.createElement("div");
+    col.className = "col-md-4";
+    const alerta = z.alerta_llena ? "⚠ ZONA LLENA — redirigir" : "";
+    col.innerHTML = `
+      <div class="zona-card ${z.alerta_llena ? 'llena' : ''}">
+        <h4 class="fw-bold">${z.zona}</h4>
+        <p style="font-size:2rem; margin:0;">${z.disponibles}</p>
+        <p class="text-muted mb-2">cupos libres de ${z.aforo_maximo}</p>
+        <div class="progress progress-cp">
+          <div class="progress-bar" style="width:${z.porcentaje}%; background:${z.alerta_llena ? '#B23A3A' : '#FF7A45'};"></div>
+        </div>
+        <small class="text-danger fw-bold">${alerta}</small>
+      </div>`;
+    cont.appendChild(col);
+  });
+}
+cargarPanel();
+setInterval(cargarPanel, 4000);
+</script>
+{% endblock %}

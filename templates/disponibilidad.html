@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Disponibilidad — Campus Parking{% endblock %}
+{% block content %}
+<h2>Disponibilidad antes de entrar</h2>
+<p class="text-muted">Consulta pública, sin necesidad de iniciar sesión.</p>
+
+<div class="row g-3">
+  {% for z in panel %}
+  <div class="col-md-4">
+    <div class="zona-card {{ 'llena' if z.alerta_llena else '' }} text-center">
+      <h4 class="fw-bold">{{ z.zona }}</h4>
+      <p style="font-size:2.2rem; margin:0;">{{ z.disponibles }}</p>
+      <p class="text-muted">cupos libres</p>
+      {% if z.alerta_llena %}<span class="text-danger fw-bold">Zona llena</span>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

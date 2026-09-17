@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Registro — Campus Parking{% endblock %}
+{% block content %}
+<h2>Registro de usuario y generación de QR</h2>
+<p class="text-muted">Al registrarse, el sistema genera un QR único vinculado a la placa.</p>
+
+<div class="card-cp p-4" style="max-width: 480px;">
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Nombre completo</label>
+      <input type="text" class="form-control" name="nombre" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Placa</label>
+      <input type="text" class="form-control text-uppercase" name="placa" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Rol</label>
+      <select class="form-select" name="rol">
+        <option value="estudiante">Estudiante</option>
+        <option value="profesor">Profesor</option>
+        <option value="administrativo">Administrativo</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-cp">Generar QR</button>
+  </form>
+</div>
+{% endblock %}

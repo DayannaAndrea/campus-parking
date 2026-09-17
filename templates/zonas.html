@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Zonas — Campus Parking{% endblock %}
+{% block content %}
+<h2>Zonas y aforo máximo</h2>
+
+<div class="card-cp p-4 mb-4" style="max-width: 480px;">
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Nombre de la zona</label>
+      <input type="text" class="form-control" name="nombre" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Aforo máximo</label>
+      <input type="number" class="form-control" name="aforo" required min="1">
+    </div>
+    <button type="submit" class="btn btn-cp">Guardar zona</button>
+  </form>
+</div>
+
+<table class="table">
+  <thead><tr><th>Zona</th><th>Aforo máximo</th></tr></thead>
+  <tbody>
+    {% for z in zonas %}
+    <tr><td>{{ z.nombre }}</td><td>{{ z.aforo_maximo }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

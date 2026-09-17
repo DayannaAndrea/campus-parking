@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Reporte de seguridad — Campus Parking{% endblock %}
+{% block content %}
+<h2>Reporte para el equipo de seguridad</h2>
+
+<form method="get" class="d-flex gap-2 mb-3" style="max-width: 320px;">
+  <input type="date" class="form-control" name="fecha" value="{{ fecha }}">
+  <button type="submit" class="btn btn-cp-outline">Ver</button>
+</form>
+
+<p class="text-muted">Vehículos que ingresaron el {{ fecha }} <strong>sin</strong> una reserva vigente en ese momento (incluye entradas por QR sin reserva y por modo de contingencia).</p>
+
+<table class="table">
+  <thead><tr><th>Placa</th><th>Zona</th><th>Método</th><th>Hora</th></tr></thead>
+  <tbody>
+    {% for f in filas %}
+    <tr>
+      <td>{{ f.placa }}</td>
+      <td>{{ f.zona or '—' }}</td>
+      <td>{{ f.metodo }}</td>
+      <td>{{ f.timestamp.split('T')[1] if 'T' in f.timestamp else f.timestamp }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted">Sin vehículos sin reserva ese día.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
