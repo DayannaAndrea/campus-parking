@@ -25,9 +25,13 @@ from app.entry_log import historial_por_placa, listar_usuarios  # noqa: E402
 from app.contingency import validar_manual, actualizar_cache, sincronizar_cola  # noqa: E402
 from app import zones  # noqa: E402
 from app import reservations  # noqa: E402
+from app.scheduler import iniciar_scheduler, estado_scheduler  # noqa: E402
 
 app = Flask(__name__)
 app.secret_key = "campus-parking-demo"
+
+# Sprint 3 — M3-06: Iniciar scheduler de recordatorios
+iniciar_scheduler()
 
 
 @app.before_request
@@ -223,6 +227,15 @@ def reporte_seguridad():
     fecha = request.args.get("fecha") or datetime.now().strftime("%Y-%m-%d")
     filas = reservations.reporte_sin_reserva(fecha)
     return render_template("reporte_seguridad.html", fecha=fecha, filas=filas)
+
+
+# ---------------------------------------------------------------
+# Sprint 3 — M3-06: estado del scheduler de recordatorios
+# ---------------------------------------------------------------
+@app.route("/scheduler-status")
+def scheduler_status():
+    estado = estado_scheduler()
+    return jsonify(estado)
 
 
 if __name__ == "__main__":
