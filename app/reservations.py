@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 from app.db import get_conn
 from app.email_service import enviar_email
+from app.email_templates import template_recordatorio_reserva, template_recordatorio_texto
 
 TOLERANCIA_NOSHOW_MIN = 15
 VENTANA_RECORDATORIO_MIN = 15
@@ -230,29 +231,27 @@ def enviar_recordatorio_reserva(reserva_id: int) -> bool:
 
     asunto = "🅿️ Recordatorio: Tu reserva de parqueadero inicia en 15 minutos"
 
-    cuerpo_texto = f"""
-Hola {reserva['nombre']},
+    # Generar contenido del email usando templates
+    cuerpo_texto = template_recordatorio_texto(
+        nombre=reserva['nombre'],
+        placa=reserva['placa'],
+        zona=reserva['zona'],
+        fecha=reserva['fecha'],
+        hora_inicio=reserva['hora_inicio'],
+        hora_fin=reserva['hora_fin']
+    )
 
-Este es un recordatorio de tu reserva de parqueadero:
+    cuerpo_html = template_recordatorio_reserva(
+        nombre=reserva['nombre'],
+        placa=reserva['placa'],
+        zona=reserva['zona'],
+        fecha=reserva['fecha'],
+        hora_inicio=reserva['hora_inicio'],
+        hora_fin=reserva['hora_fin']
+    )
 
-📍 Zona: {reserva['zona']}
-📅 Fecha: {reserva['fecha']}
-⏰ Horario: {reserva['hora_inicio']} - {reserva['hora_fin']}
-🚗 Placa: {reserva['placa']}
-
-Tu reserva comienza en aproximadamente 15 minutos.
-
-⚠️ IMPORTANTE: Si no ingresas dentro de los primeros 15 minutos de tu franja horaria,
-la reserva se liberará automáticamente para otros usuarios.
-
-¡Nos vemos pronto!
-
-Campus Parking
-Sistema de Control de Entradas y Cupos
-"""
-
-    # Enviar email
-    enviado = enviar_email(email_usuario, asunto, cuerpo_texto)
+    # Enviar email con ambas versiones (texto y HTML)
+    enviado = enviar_email(email_usuario, asunto, cuerpo_texto, cuerpo_html)
 
     # Marcar como enviado en la BD
     if enviado:
