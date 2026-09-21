@@ -71,6 +71,11 @@ def init_db():
         )
         """
     )
+    # Sprint 3 — M3-06: agregar columna para tracking de recordatorios
+    try:
+        conn.execute("ALTER TABLE reservas ADD COLUMN recordatorio_enviado INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # La columna ya existe
     conn.commit()
 
     # Semilla de zonas si la tabla está vacía (para que el panel no arranque en cero)

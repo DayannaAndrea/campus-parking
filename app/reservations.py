@@ -6,14 +6,17 @@ M3-02 — Liberación automática por no-show (15 min de tolerancia).
 M3-03 — Validar si una placa tiene reserva vigente al escanear el QR.
 M3-04 — Historial exportable (CSV).
 M3-05 — Reporte de placas sin reserva que ingresaron.
+M3-06 — Recordatorio por correo institucional 15 min antes del inicio.
 """
 import csv
 import io
 from datetime import datetime, timedelta
 
 from app.db import get_conn
+from app.email_service import enviar_email
 
 TOLERANCIA_NOSHOW_MIN = 15
+VENTANA_RECORDATORIO_MIN = 15
 
 
 def crear_reserva(placa: str, zona: str, fecha: str, hora_inicio: str, hora_fin: str):
@@ -163,3 +166,118 @@ def reporte_sin_reserva(fecha: str = None):
             resultado.append(dict(e))
     conn.close()
     return resultado
+
+
+def obtener_reservas_proximas():
+    """
+    M3-06: Obtiene reservas que necesitan recordatorio.
+
+    Busca reservas activas cuyo inicio esté dentro de los próximos 15 minutos
+    y que aún no hayan recibido recordatorio.
+
+    Returns:
+        Lista de diccionarios con datos de reserva y usuario
+    """
+    conn = get_conn()
+    ahora = datetime.now()
+    ventana_inicio = ahora + timedelta(minutes=VENTANA_RECORDATORIO_MIN - 2)
+    ventana_fin = ahora + timedelta(minutes=VENTANA_RECORDATORIO_MIN + 2)
+
+    # Buscar reservas en la ventana de tiempo que no tengan recordatorio enviado
+    reservas = conn.execute(
+        """
+        SELECT r.*, u.nombre, u.rol
+        FROM reservas r
+        JOIN usuarios u ON r.placa = u.placa
+        WHERE r.estado = 'activa'
+          AND r.recordatorio_enviado = 0
+          AND datetime(r.fecha || 'T' || r.hora_inicio) BETWEEN ? AND ?
+        """,
+        (ventana_inicio.isoformat(timespec="seconds"), ventana_fin.isoformat(timespec="seconds")),
+    ).fetchall()
+    conn.close()
+
+    return [dict(r) for r in reservas]
+
+
+def enviar_recordatorio_reserva(reserva_id: int) -> bool:
+    """
+    M3-06: Envía recordatorio por email para una reserva específica.
+
+    Args:
+        reserva_id: ID de la reserva
+
+    Returns:
+        True si el email se envió correctamente
+    """
+    conn = get_conn()
+    reserva = conn.execute(
+        """
+        SELECT r.*, u.nombre, u.rol
+        FROM reservas r
+        JOIN usuarios u ON r.placa = u.placa
+        WHERE r.id = ?
+        """,
+        (reserva_id,),
+    ).fetchone()
+
+    if not reserva:
+        conn.close()
+        return False
+
+    # Construir email institucional (simulado)
+    email_usuario = f"{reserva['placa'].lower().replace('-', '')}@campus.edu"
+
+    asunto = "🅿️ Recordatorio: Tu reserva de parqueadero inicia en 15 minutos"
+
+    cuerpo_texto = f"""
+Hola {reserva['nombre']},
+
+Este es un recordatorio de tu reserva de parqueadero:
+
+📍 Zona: {reserva['zona']}
+📅 Fecha: {reserva['fecha']}
+⏰ Horario: {reserva['hora_inicio']} - {reserva['hora_fin']}
+🚗 Placa: {reserva['placa']}
+
+Tu reserva comienza en aproximadamente 15 minutos.
+
+⚠️ IMPORTANTE: Si no ingresas dentro de los primeros 15 minutos de tu franja horaria,
+la reserva se liberará automáticamente para otros usuarios.
+
+¡Nos vemos pronto!
+
+Campus Parking
+Sistema de Control de Entradas y Cupos
+"""
+
+    # Enviar email
+    enviado = enviar_email(email_usuario, asunto, cuerpo_texto)
+
+    # Marcar como enviado en la BD
+    if enviado:
+        conn.execute(
+            "UPDATE reservas SET recordatorio_enviado = 1 WHERE id = ?",
+            (reserva_id,),
+        )
+        conn.commit()
+
+    conn.close()
+    return enviado
+
+
+def procesar_recordatorios() -> int:
+    """
+    M3-06: Procesa y envía todos los recordatorios pendientes.
+
+    Returns:
+        Número de recordatorios enviados exitosamente
+    """
+    reservas_proximas = obtener_reservas_proximas()
+    enviados = 0
+
+    for reserva in reservas_proximas:
+        if enviar_recordatorio_reserva(reserva["id"]):
+            enviados += 1
+
+    return enviados
