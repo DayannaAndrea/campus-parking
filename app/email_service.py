@@ -46,7 +46,7 @@ def enviar_email(
         True si se envió correctamente, False en caso contrario
     """
     if not EmailConfig.is_configured():
-        print("⚠️  Email no configurado. Set SMTP_USER y SMTP_PASSWORD en variables de entorno.")
+        print("[WARNING] Email no configurado. Set SMTP_USER y SMTP_PASSWORD en variables de entorno.")
         return False
 
     try:
@@ -71,11 +71,11 @@ def enviar_email(
             servidor.login(EmailConfig.SMTP_USER, EmailConfig.SMTP_PASSWORD)
             servidor.send_message(mensaje)
 
-        print(f"✅ Email enviado a {destinatario}: {asunto}")
+        print(f"[OK] Email enviado a {destinatario}: {asunto}")
         return True
 
     except Exception as e:
-        print(f"❌ Error enviando email a {destinatario}: {e}")
+        print(f"[ERROR] Error enviando email a {destinatario}: {e}")
         return False
 
 
@@ -88,8 +88,8 @@ def test_email_connection() -> bool:
         with smtplib.SMTP(EmailConfig.SMTP_HOST, EmailConfig.SMTP_PORT) as servidor:
             servidor.starttls()
             servidor.login(EmailConfig.SMTP_USER, EmailConfig.SMTP_PASSWORD)
-        print("✅ Conexión SMTP exitosa")
+        print("[OK] Conexion SMTP exitosa")
         return True
     except Exception as e:
-        print(f"❌ Error de conexión SMTP: {e}")
+        print(f"[ERROR] Error de conexion SMTP: {e}")
         return False

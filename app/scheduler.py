@@ -17,13 +17,13 @@ def job_procesar_recordatorios():
     # Importación tardía para evitar ciclos de importación
     from app.reservations import procesar_recordatorios
 
-    print(f"🕐 [{datetime.now().strftime('%H:%M:%S')}] Ejecutando job de recordatorios...")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Ejecutando job de recordatorios...")
     try:
         enviados = procesar_recordatorios()
         if enviados > 0:
-            print(f"✅ Se enviaron {enviados} recordatorios")
+            print(f"[OK] Se enviaron {enviados} recordatorios")
     except Exception as e:
-        print(f"❌ Error en job de recordatorios: {e}")
+        print(f"[ERROR] Error en job de recordatorios: {e}")
 
 
 def iniciar_scheduler():
@@ -31,7 +31,7 @@ def iniciar_scheduler():
     global _scheduler
 
     if _scheduler is not None:
-        print("⚠️  Scheduler ya iniciado")
+        print("[WARNING] Scheduler ya iniciado")
         return
 
     _scheduler = BackgroundScheduler()
@@ -47,7 +47,7 @@ def iniciar_scheduler():
     )
 
     _scheduler.start()
-    print("✅ Scheduler iniciado: recordatorios cada 1 minuto")
+    print("[OK] Scheduler iniciado: recordatorios cada 1 minuto")
 
 
 def detener_scheduler():
@@ -57,7 +57,7 @@ def detener_scheduler():
     if _scheduler is not None:
         _scheduler.shutdown()
         _scheduler = None
-        print("🛑 Scheduler detenido")
+        print("[STOP] Scheduler detenido")
 
 
 def estado_scheduler() -> dict:
