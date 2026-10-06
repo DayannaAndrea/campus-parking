@@ -15,6 +15,8 @@ import os
 import sqlite3
 import sys
 
+import re
+
 import qrcode
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,8 +31,19 @@ def _firmar(placa: str, id_usuario: int) -> str:
     return hmac.new(SECRET_KEY, msg, hashlib.sha256).hexdigest()[:12]
 
 
+PLACA_RE = re.compile(r"^[A-Z0-9]{5,7}$")
+
+
+def placa_valida(placa: str) -> bool:
+    return bool(PLACA_RE.match((placa or "").strip().upper()))
+
+
 def generar_qr(nombre: str, placa: str, rol: str) -> str:
-    placa = placa.strip().upper()
+    placa = (placa or "").strip().upper()
+    if not (nombre or "").strip():
+        raise ValueError("El nombre es obligatorio.")
+    if not placa_valida(placa):
+        raise ValueError("La placa debe tener entre 5 y 7 letras o números (ej. ABC123), sin espacios ni símbolos.")
     conn = get_conn()
     try:
         cur = conn.execute(

@@ -19,6 +19,8 @@ from pyzbar_fallback import decode_qr  # decodificador propio (ver más abajo)  
 from app.db import get_conn  # noqa: E402
 from app.qr_generator import _firmar  # noqa: E402
 from app.entry_log import registrar_evento  # noqa: E402
+from app.db import ultimo_tipo_registro  # noqa: E402
+from app import zones  # noqa: E402
 from app.reservations import reserva_vigente, marcar_reserva_usada  # noqa: E402
 
 VERDE = "\033[92m"
@@ -56,6 +58,12 @@ def escanear(ruta_qr: str, zona: str = None):
 
     duracion = time.perf_counter() - inicio
     resultado = {"valido": valido, "duracion_ms": round(duracion * 1000, 1)}
+
+    if valido and zona and ultimo_tipo_registro(info) != "entrada":
+        z = next((x for x in zones.panel_cupos() if x["zona"] == zona), None)
+        if z and z["disponibles"] == 0:
+            valido, info = False, f"{zona} está llena: dirija al conductor a otra zona"
+            resultado["valido"] = False
 
     if valido:
         placa = info

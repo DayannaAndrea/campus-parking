@@ -10,7 +10,7 @@
 <body>
   <nav class="navbar navbar-expand-lg navbar-cp mb-4">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">🅿️ Campus Parking</a>
+      <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">Campus Parking</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -21,6 +21,7 @@
           <li class="nav-item"><a class="nav-link" href="{{ url_for('vigilante') }}">Vigilante</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('contingencia') }}">Contingencia</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('panel') }}">Panel de Cupos</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('zonas_admin') }}">Zonas</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('disponibilidad') }}">Disponibilidad</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('reservar') }}">Reservar</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('historial') }}">Historial</a></li>
@@ -42,7 +43,6 @@
     {% block content %}{% endblock %}
   </div>
 
-  <footer>Campus Parking — Prototipo académico · Gestión de Proyectos de Software</footer>
   <script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>

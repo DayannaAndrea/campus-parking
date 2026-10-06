@@ -19,7 +19,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, Res
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.db import get_conn, DATA_DIR  # noqa: E402
-from app.qr_generator import generar_qr  # noqa: E402
+from app.qr_generator import generar_qr, placa_valida  # noqa: E402
 from app.validator import escanear, validar_token  # noqa: E402
 from app.entry_log import historial_por_placa, listar_usuarios  # noqa: E402
 from app.contingency import validar_manual, actualizar_cache, sincronizar_cola  # noqa: E402
@@ -64,6 +64,8 @@ def registro():
             actualizar_cache()  # mantiene el caché de contingencia al día (M1-04)
             flash("Placa ya registrada; QR regenerado." if ya_existia else f"QR generado para {placa}.", "success")
             return redirect(url_for("mi_qr", placa=placa))
+        except ValueError as e:
+            flash(str(e), "danger")
         except Exception as e:
             flash(f"No se pudo registrar: {e}", "danger")
     return render_template("registro.html")
@@ -102,7 +104,7 @@ def vigilante():
         placa = request.form.get("placa", "").strip().upper()
         zona = request.form.get("zona") or None
         ruta = os.path.join(DATA_DIR, "qrcodes", f"{placa}.png")
-        if not os.path.exists(ruta):
+        if not placa_valida(placa) or not os.path.exists(ruta):
             flash(f"No existe un QR generado para la placa {placa}.", "danger")
         else:
             resultado = escanear(ruta, zona=zona)

@@ -194,7 +194,7 @@ def obtener_reservas_proximas():
           AND r.recordatorio_enviado = 0
           AND datetime(r.fecha || 'T' || r.hora_inicio) BETWEEN ? AND ?
         """,
-        (ventana_inicio.isoformat(timespec="seconds"), ventana_fin.isoformat(timespec="seconds")),
+        (ventana_inicio.isoformat(sep=" ", timespec="seconds"), ventana_fin.isoformat(sep=" ", timespec="seconds")),
     ).fetchall()
     conn.close()
 
