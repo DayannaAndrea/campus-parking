@@ -28,12 +28,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app.db import get_conn, DATA_DIR  # noqa: E402
 from app.qr_generator import generar_qr, placa_valida  # noqa: E402
 from app.validator import escanear, validar_token  # noqa: E402
-from app.entry_log import historial_por_placa, listar_usuarios  # noqa: E402
+from app.entry_log import historial_por_placa, listar_usuarios, cambiar_estado_usuario  # noqa: E402
 from app.contingency import validar_manual, actualizar_cache, sincronizar_cola  # noqa: E402
 from app import zones  # noqa: E402
 from app import reservations  # noqa: E402
 from app import csrf  # noqa: E402
 from app.email_service import EmailConfig, test_email_connection  # noqa: E402
+from app import aceptacion  # noqa: E402
 from app.scheduler import iniciar_scheduler, estado_scheduler  # noqa: E402
 
 app = Flask(__name__)
@@ -263,6 +264,69 @@ def reporte_seguridad():
     fecha = request.args.get("fecha") or datetime.now().strftime("%Y-%m-%d")
     filas = reservations.reporte_sin_reserva(fecha)
     return render_template("reporte_seguridad.html", fecha=fecha, filas=filas)
+
+
+# ---------------------------------------------------------------
+# Cancelar reservas y dar de baja / reactivar vehículos
+# ---------------------------------------------------------------
+@app.route("/reservas/<int:reserva_id>/cancelar", methods=["POST"])
+def cancelar_reserva(reserva_id):
+    try:
+        placa = reservations.cancelar_reserva(reserva_id)
+        flash("Reserva cancelada. El cupo quedó libre.", "success")
+        return redirect(url_for("mis_reservas", placa=placa))
+    except ValueError as e:
+        flash(str(e), "danger")
+        return redirect(url_for("reservar"))
+
+
+@app.route("/vehiculos/<placa>/estado", methods=["POST"])
+def estado_vehiculo(placa):
+    activo = request.form.get("activo") == "1"
+    try:
+        cambiar_estado_usuario(placa, activo)
+        actualizar_cache()  # el modo de contingencia debe ver el cambio
+        flash(f"{placa.upper()} {'reactivado' if activo else 'dado de baja'}.", "success")
+    except ValueError as e:
+        flash(str(e), "danger")
+    return redirect(url_for("usuarios_registrados"))
+
+
+# ---------------------------------------------------------------
+# Medición del tiempo de ingreso y aceptación del sponsor
+# ---------------------------------------------------------------
+@app.route("/medicion", methods=["GET", "POST"])
+def medicion():
+    if request.method == "POST":
+        accion = request.form.get("accion", "registrar")
+        try:
+            if accion == "deshacer":
+                flash("Se eliminó la última medición." if aceptacion.borrar_ultima_medicion()
+                      else "No hay mediciones para eliminar.", "success")
+            else:
+                if request.form.get("minutos"):
+                    segundos = float(request.form["minutos"].replace(",", ".")) * 60
+                else:
+                    segundos = request.form.get("segundos")
+                aceptacion.registrar_medicion(segundos, request.form.get("placa"), request.form.get("fecha") or None)
+                flash("Medición registrada.", "success")
+        except ValueError as e:
+            flash(str(e), "danger")
+        return redirect(url_for("medicion"))
+    return render_template("medicion.html", r=aceptacion.evaluar(), hoy=datetime.now().strftime("%Y-%m-%d"))
+
+
+@app.route("/medicion/csv")
+def medicion_csv():
+    return Response(
+        aceptacion.csv_mediciones(), mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=mediciones_ingreso.csv"},
+    )
+
+
+@app.route("/api/medicion")
+def api_medicion():
+    return jsonify(aceptacion.evaluar())
 
 
 # ---------------------------------------------------------------

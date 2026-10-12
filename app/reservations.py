@@ -69,6 +69,22 @@ def crear_reserva(placa: str, zona: str, fecha: str, hora_inicio: str, hora_fin:
     conn.close()
 
 
+def cancelar_reserva(reserva_id: int) -> str:
+    """Cancela una reserva que aún está activa y devuelve la placa dueña de la reserva."""
+    conn = get_conn()
+    fila = conn.execute("SELECT placa, estado FROM reservas WHERE id = ?", (reserva_id,)).fetchone()
+    if fila is None:
+        conn.close()
+        raise ValueError("La reserva no existe.")
+    if fila["estado"] != "activa":
+        conn.close()
+        raise ValueError("Solo se pueden cancelar reservas activas.")
+    conn.execute("UPDATE reservas SET estado = 'cancelada' WHERE id = ?", (reserva_id,))
+    conn.commit()
+    conn.close()
+    return fila["placa"]
+
+
 def liberar_no_shows():
     """M3-02: libera automáticamente reservas activas cuyo inicio + tolerancia ya pasó
     y la placa nunca registró entrada dentro de esa franja."""

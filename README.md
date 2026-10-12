@@ -26,6 +26,18 @@ y permite reservar un cupo por franja horaria.
   recordatorio por SMTP 15 minutos antes de que inicie la reserva.
 - **Historial y reportes** — historial de entradas/salidas exportable en
   CSV, y un reporte de los vehículos que ingresaron sin una reserva vigente.
+- **Vehículos registrados** — lista de todos los usuarios con su estado
+  actual (dentro/fuera del campus) y acceso directo a su QR y su historial.
+  Desde ahí también se puede dar de baja un vehículo (ya no podrá ingresar) o
+  reactivarlo. No se permite dar de baja a un vehículo que está dentro del
+  campus: primero debe registrarse su salida.
+- **Cancelar reservas** — desde "Mis reservas" el usuario cancela una reserva
+  activa y el cupo de esa franja queda libre.
+- **Medición del tiempo de ingreso** — pantalla con un cronómetro para medir
+  cada ingreso en portería (o registrar un tiempo a mano). Calcula el
+  promedio por día y dice si se cumple la meta de aceptación: 3 minutos o
+  menos durante 5 días hábiles consecutivos, con al menos 20 vehículos por
+  día. Las mediciones se pueden descargar en CSV.
 - **Estado del sistema** — pantalla que muestra la configuración SMTP y el
   estado del scheduler (página *Sistema*).
 - **Protección CSRF** — todos los formularios exigen un token de sesión.
@@ -120,7 +132,8 @@ campus-parking/
 │   ├── entry_log.py        Registro de entradas/salidas y listado de vehículos
 │   ├── contingency.py      Validación manual por placa (modo sin red)
 │   ├── zones.py            Zonas, aforo y ocupación en tiempo real
-│   ├── reservations.py     Reservas, no-show, historial, reportes y recordatorios
+│   ├── reservations.py     Reservas, cancelación, no-show, historial, reportes y recordatorios
+│   ├── aceptacion.py       Mediciones de ingreso y dictamen de aceptación (5 días ≤ 3 min)
 │   ├── email_service.py    Envío de correos por SMTP (M3-06)
 │   ├── email_templates.py  Plantillas HTML/texto de los recordatorios
 │   ├── scheduler.py        Tareas en segundo plano (APScheduler)

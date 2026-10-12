@@ -81,6 +81,18 @@ def init_db():
         conn.execute("ALTER TABLE reservas ADD COLUMN recordatorio_enviado INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass  # La columna ya existe
+    # Medición de aceptación: tiempo de ingreso de cada vehículo en portería
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mediciones (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT NOT NULL,
+            placa TEXT,
+            segundos REAL NOT NULL CHECK(segundos > 0),
+            creada TEXT NOT NULL
+        )
+        """
+    )
     conn.commit()
 
     # Semilla de zonas si la tabla está vacía (para que el panel no arranque en cero)

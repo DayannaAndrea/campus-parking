@@ -55,6 +55,27 @@ def historial_por_placa(placa: str):
     return [dict(f) for f in filas]
 
 
+def cambiar_estado_usuario(placa: str, activo: bool) -> None:
+    """Da de baja o reactiva un vehículo. Un vehículo que está dentro no puede darse de baja:
+    primero debe registrarse su salida (si no, su cupo quedaría ocupado para siempre)."""
+    placa = placa.strip().upper()
+    conn = get_conn()
+    fila = conn.execute("SELECT id FROM usuarios WHERE placa = ?", (placa,)).fetchone()
+    if fila is None:
+        conn.close()
+        raise ValueError(f"La placa {placa} no está registrada.")
+    if not activo:
+        ultimo = conn.execute(
+            "SELECT tipo FROM registros WHERE placa = ? ORDER BY id DESC LIMIT 1", (placa,)
+        ).fetchone()
+        if ultimo and ultimo["tipo"] == "entrada":
+            conn.close()
+            raise ValueError(f"{placa} está dentro del campus: registra primero su salida.")
+    conn.execute("UPDATE usuarios SET activo = ? WHERE id = ?", (1 if activo else 0, fila["id"]))
+    conn.commit()
+    conn.close()
+
+
 def listar_usuarios():
     """Todos los vehículos/usuarios registrados, con su último movimiento
     (para saber si están 'Dentro' o 'Fuera' del campus en este momento)."""

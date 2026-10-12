@@ -20,6 +20,7 @@
           <th>Franja</th>
           <th>Zona</th>
           <th>Estado</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -34,10 +35,19 @@
             {% elif r.estado == 'liberada' %}{{ ui.badge('Liberada · no-show', 'warning') }}
             {% else %}{{ ui.badge('Cancelada', 'secondary') }}{% endif %}
           </td>
+          <td class="text-end">
+            {% if r.estado == 'activa' %}
+            <form method="post" action="{{ url_for('cancelar_reserva', reserva_id=r.id) }}"
+                  onsubmit="return confirm('¿Cancelar esta reserva? El cupo quedará libre.');">
+              {{ csrf_input() }}
+              <button class="btn btn-ghost btn-sm">Cancelar</button>
+            </form>
+            {% endif %}
+          </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="4">
+          <td colspan="5">
             <div class="empty-state">
               <div class="empty-icon">{{ ui.icon('calendar') }}</div>
               <p>Sin reservas registradas para {{ placa }}.</p>

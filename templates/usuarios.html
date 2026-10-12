@@ -25,7 +25,9 @@
           <td>{{ u.nombre }}</td>
           <td>{{ ui.badge(u.rol, 'info') }}</td>
           <td>
-            {% if u.estado == 'Dentro' %}
+            {% if not u.activo %}
+              {{ ui.badge('De baja', 'danger') }}
+            {% elif u.estado == 'Dentro' %}
               {{ ui.badge('Dentro', 'success') }}
             {% else %}
               {{ ui.badge('Fuera', 'secondary') }}
@@ -35,6 +37,12 @@
           <td class="text-end">
             <a href="{{ url_for('mi_qr', placa=u.placa) }}" class="btn btn-ghost btn-sm">Ver QR</a>
             <a href="{{ url_for('historial', placa=u.placa) }}" class="btn btn-ghost btn-sm">Historial</a>
+            <form method="post" action="{{ url_for('estado_vehiculo', placa=u.placa) }}" class="d-inline"
+                  {% if u.activo %}onsubmit="return confirm('¿Dar de baja el vehículo {{ u.placa }}? Ya no podrá ingresar.');"{% endif %}>
+              {{ csrf_input() }}
+              <input type="hidden" name="activo" value="{{ 0 if u.activo else 1 }}">
+              <button class="btn btn-ghost btn-sm">{{ 'Dar de baja' if u.activo else 'Reactivar' }}</button>
+            </form>
           </td>
         </tr>
         {% else %}
