@@ -56,6 +56,9 @@ def utilidades_contexto():
 
     return {"formatear_fecha": formatear_fecha, "csrf_input": csrf_input}
 
+# Sprint 3 — M3-06: Iniciar scheduler de recordatorios
+iniciar_scheduler()
+
 
 @app.before_request
 def _sincronizar_cola_contingencia():
@@ -263,7 +266,7 @@ def reporte_seguridad():
 
 
 # ---------------------------------------------------------------
-# Sprint 3 — M3-06: estado del scheduler y configuración de email
+# Sprint 3 - M3-06: estado del scheduler y configuración de email
 # ---------------------------------------------------------------
 @app.route("/scheduler-status")
 def scheduler_status():
