@@ -15,6 +15,8 @@ import os
 import sqlite3
 import sys
 
+import re
+
 import qrcode
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,13 +31,32 @@ def _firmar(placa: str, id_usuario: int) -> str:
     return hmac.new(SECRET_KEY, msg, hashlib.sha256).hexdigest()[:12]
 
 
-def generar_qr(nombre: str, placa: str, rol: str) -> str:
-    placa = placa.strip().upper()
+PLACA_RE = re.compile(r"^[A-Z0-9]{5,7}$")
+EMAIL_RE = re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$", re.IGNORECASE)
+
+
+def placa_valida(placa: str) -> bool:
+    return bool(PLACA_RE.match((placa or "").strip().upper()))
+
+
+def email_valido(email: str) -> bool:
+    return bool(EMAIL_RE.match((email or "").strip()))
+
+
+def generar_qr(nombre: str, placa: str, rol: str, email: str = None) -> str:
+    placa = (placa or "").strip().upper()
+    email = (email or "").strip() or None
+    if not (nombre or "").strip():
+        raise ValueError("El nombre es obligatorio.")
+    if not placa_valida(placa):
+        raise ValueError("La placa debe tener entre 5 y 7 letras o números (ej. ABC123), sin espacios ni símbolos.")
+    if email is not None and not email_valido(email):
+        raise ValueError("Correo electrónico con formato inválido (ej. nombre@correo.edu).")
     conn = get_conn()
     try:
         cur = conn.execute(
-            "INSERT INTO usuarios (nombre, placa, rol, token) VALUES (?, ?, ?, '')",
-            (nombre, placa, rol),
+            "INSERT INTO usuarios (nombre, placa, rol, email, token) VALUES (?, ?, ?, ?, '')",
+            (nombre, placa, rol, email),
         )
         id_usuario = cur.lastrowid
         conn.commit()
@@ -44,8 +65,8 @@ def generar_qr(nombre: str, placa: str, rol: str) -> str:
         fila = conn.execute("SELECT id FROM usuarios WHERE placa = ?", (placa,)).fetchone()
         id_usuario = fila["id"]
         conn.execute(
-            "UPDATE usuarios SET nombre = ?, rol = ? WHERE id = ?",
-            (nombre, rol, id_usuario),
+            "UPDATE usuarios SET nombre = ?, rol = ?, email = ? WHERE id = ?",
+            (nombre, rol, email, id_usuario),
         )
         conn.commit()
     token = f"{placa}|{id_usuario}|{_firmar(placa, id_usuario)}"

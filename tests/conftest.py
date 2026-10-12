@@ -3,6 +3,8 @@ import os
 
 import pytest
 
+os.environ["CSRF_OFF"] = "1"  # los tests envían POST sin token CSRF
+
 import app.db as db
 import app.qr_generator as qg
 import app.contingency as cont

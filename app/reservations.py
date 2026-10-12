@@ -6,14 +6,18 @@ M3-02 — Liberación automática por no-show (15 min de tolerancia).
 M3-03 — Validar si una placa tiene reserva vigente al escanear el QR.
 M3-04 — Historial exportable (CSV).
 M3-05 — Reporte de placas sin reserva que ingresaron.
+M3-06 — Recordatorio por correo institucional 15 min antes del inicio.
 """
 import csv
 import io
 from datetime import datetime, timedelta
 
 from app.db import get_conn
+from app.email_service import enviar_email
+from app.email_templates import template_recordatorio_reserva, template_recordatorio_texto
 
 TOLERANCIA_NOSHOW_MIN = 15
+VENTANA_RECORDATORIO_MIN = 15
 
 
 def crear_reserva(placa: str, zona: str, fecha: str, hora_inicio: str, hora_fin: str):
@@ -163,3 +167,115 @@ def reporte_sin_reserva(fecha: str = None):
             resultado.append(dict(e))
     conn.close()
     return resultado
+
+
+def obtener_reservas_proximas():
+    """
+    M3-06: Obtiene reservas que necesitan recordatorio.
+
+    Busca reservas activas cuyo inicio esté dentro de los próximos 15 minutos
+    y que aún no hayan recibido recordatorio.
+
+    Returns:
+        Lista de diccionarios con datos de reserva y usuario
+    """
+    conn = get_conn()
+    ahora = datetime.now()
+    ventana_inicio = ahora + timedelta(minutes=VENTANA_RECORDATORIO_MIN - 2)
+    ventana_fin = ahora + timedelta(minutes=VENTANA_RECORDATORIO_MIN + 2)
+
+    # Buscar reservas en la ventana de tiempo que no tengan recordatorio enviado
+    reservas = conn.execute(
+        """
+        SELECT r.*, u.nombre, u.rol
+        FROM reservas r
+        JOIN usuarios u ON r.placa = u.placa
+        WHERE r.estado = 'activa'
+          AND r.recordatorio_enviado = 0
+          AND datetime(r.fecha || 'T' || r.hora_inicio) BETWEEN ? AND ?
+        """,
+        (ventana_inicio.isoformat(sep=" ", timespec="seconds"), ventana_fin.isoformat(sep=" ", timespec="seconds")),
+    ).fetchall()
+    conn.close()
+
+    return [dict(r) for r in reservas]
+
+
+def enviar_recordatorio_reserva(reserva_id: int) -> bool:
+    """
+    M3-06: Envía recordatorio por email para una reserva específica.
+
+    Args:
+        reserva_id: ID de la reserva
+
+    Returns:
+        True si el email se envió correctamente
+    """
+    conn = get_conn()
+    reserva = conn.execute(
+        """
+        SELECT r.*, u.nombre, u.rol, u.email
+        FROM reservas r
+        JOIN usuarios u ON r.placa = u.placa
+        WHERE r.id = ?
+        """,
+        (reserva_id,),
+    ).fetchone()
+
+    if not reserva:
+        conn.close()
+        return False
+
+    email_usuario = reserva["email"] or f"{reserva['placa'].lower().replace('-', '')}@campus.edu"
+
+    asunto = "🅿️ Recordatorio: Tu reserva de parqueadero inicia en 15 minutos"
+
+    # Generar contenido del email usando templates
+    cuerpo_texto = template_recordatorio_texto(
+        nombre=reserva['nombre'],
+        placa=reserva['placa'],
+        zona=reserva['zona'],
+        fecha=reserva['fecha'],
+        hora_inicio=reserva['hora_inicio'],
+        hora_fin=reserva['hora_fin']
+    )
+
+    cuerpo_html = template_recordatorio_reserva(
+        nombre=reserva['nombre'],
+        placa=reserva['placa'],
+        zona=reserva['zona'],
+        fecha=reserva['fecha'],
+        hora_inicio=reserva['hora_inicio'],
+        hora_fin=reserva['hora_fin']
+    )
+
+    # Enviar email con ambas versiones (texto y HTML)
+    enviado = enviar_email(email_usuario, asunto, cuerpo_texto, cuerpo_html)
+
+    # Marcar como enviado en la BD
+    if enviado:
+        conn.execute(
+            "UPDATE reservas SET recordatorio_enviado = 1 WHERE id = ?",
+            (reserva_id,),
+        )
+        conn.commit()
+
+    conn.close()
+    return enviado
+
+
+def procesar_recordatorios() -> int:
+    """
+    M3-06: Procesa y envía todos los recordatorios pendientes.
+
+    Returns:
+        Número de recordatorios enviados exitosamente
+    """
+    reservas_proximas = obtener_reservas_proximas()
+    enviados = 0
+
+    for reserva in reservas_proximas:
+        if enviar_recordatorio_reserva(reserva["id"]):
+            enviados += 1
+
+    return enviados

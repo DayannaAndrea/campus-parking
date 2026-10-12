@@ -14,26 +14,60 @@ import os
 import sys
 from datetime import datetime
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:  # python-dotenv opcional: si falta, se usan las variables del entorno
+    pass
+
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
+from markupsafe import Markup
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.db import get_conn, DATA_DIR  # noqa: E402
-from app.qr_generator import generar_qr  # noqa: E402
+from app.qr_generator import generar_qr, placa_valida  # noqa: E402
 from app.validator import escanear, validar_token  # noqa: E402
 from app.entry_log import historial_por_placa, listar_usuarios  # noqa: E402
 from app.contingency import validar_manual, actualizar_cache, sincronizar_cola  # noqa: E402
 from app import zones  # noqa: E402
 from app import reservations  # noqa: E402
+from app import csrf  # noqa: E402
+from app.email_service import EmailConfig, test_email_connection  # noqa: E402
+from app.scheduler import iniciar_scheduler, estado_scheduler  # noqa: E402
 
 app = Flask(__name__)
-app.secret_key = "campus-parking-demo"
+app.secret_key = os.getenv("SECRET_KEY", "campus-parking-demo")
+app.config["CSRF_OFF"] = os.getenv("CSRF_OFF", "0") == "1"
+
+# Sprint 3 — M3-06: Iniciar scheduler de recordatorios
+iniciar_scheduler()
+
+
+@app.context_processor
+def utilidades_contexto():
+    def formatear_fecha(ts):
+        if not ts:
+            return "—"
+        return str(ts).replace("T", " ")[:16]
+
+    def csrf_input():
+        return Markup(f'<input type="hidden" name="csrf_token" value="{csrf.generar_token()}"/>')
+
+    return {"formatear_fecha": formatear_fecha, "csrf_input": csrf_input}
 
 
 @app.before_request
 def _sincronizar_cola_contingencia():
     """Vuelca en la BD cualquier evento encolado por el modo contingencia (M1-04)."""
     sincronizar_cola()
+
+
+@app.before_request
+def _proteger_contra_csrf():
+    """Exige un token CSRF válido en toda petición POST (C: seguridad básica)."""
+    if request.method == "POST":
+        csrf.validar_csrf()
 
 
 @app.route("/")
@@ -52,14 +86,17 @@ def registro():
         nombre = request.form["nombre"].strip()
         placa = request.form["placa"].strip().upper()
         rol = request.form["rol"]
+        email = request.form.get("email", "").strip() or None
         conn = get_conn()
         ya_existia = conn.execute("SELECT 1 FROM usuarios WHERE placa = ?", (placa,)).fetchone()
         conn.close()
         try:
-            generar_qr(nombre, placa, rol)
+            generar_qr(nombre, placa, rol, email=email)
             actualizar_cache()  # mantiene el caché de contingencia al día (M1-04)
             flash("Placa ya registrada; QR regenerado." if ya_existia else f"QR generado para {placa}.", "success")
             return redirect(url_for("mi_qr", placa=placa))
+        except ValueError as e:
+            flash(str(e), "danger")
         except Exception as e:
             flash(f"No se pudo registrar: {e}", "danger")
     return render_template("registro.html")
@@ -98,7 +135,7 @@ def vigilante():
         placa = request.form.get("placa", "").strip().upper()
         zona = request.form.get("zona") or None
         ruta = os.path.join(DATA_DIR, "qrcodes", f"{placa}.png")
-        if not os.path.exists(ruta):
+        if not placa_valida(placa) or not os.path.exists(ruta):
             flash(f"No existe un QR generado para la placa {placa}.", "danger")
         else:
             resultado = escanear(ruta, zona=zona)
@@ -225,5 +262,41 @@ def reporte_seguridad():
     return render_template("reporte_seguridad.html", fecha=fecha, filas=filas)
 
 
+# ---------------------------------------------------------------
+# Sprint 3 — M3-06: estado del scheduler y configuración de email
+# ---------------------------------------------------------------
+@app.route("/scheduler-status")
+def scheduler_status():
+    estado = estado_scheduler()
+    return jsonify(estado)
+
+
+@app.route("/sistema")
+def sistema():
+    email_cfg = {
+        "host": EmailConfig.SMTP_HOST,
+        "port": EmailConfig.SMTP_PORT,
+        "from_email": EmailConfig.FROM_EMAIL,
+        "from_name": EmailConfig.FROM_NAME,
+        "configurado": EmailConfig.is_configured(),
+    }
+    return render_template("sistema.html", email_cfg=email_cfg, sched=estado_scheduler())
+
+
+@app.route("/sistema/probar-email", methods=["POST"])
+def sistema_probar_email():
+    if not EmailConfig.is_configured():
+        flash("El envío de correos no está configurado: define SMTP_USER y SMTP_PASSWORD en el archivo .env.", "warning")
+    elif test_email_connection():
+        flash("Conexión SMTP exitosa. Los recordatorios pueden enviarse.", "success")
+    else:
+        flash("Falló la conexión SMTP. Revisa host, puerto y credenciales en el archivo .env.", "danger")
+    return redirect(url_for("sistema"))
+
+
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5050)
+    app.run(
+        debug=os.getenv("FLASK_DEBUG", "0") == "1",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "5050")),
+    )

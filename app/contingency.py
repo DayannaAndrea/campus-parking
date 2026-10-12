@@ -38,6 +38,18 @@ def _leer_cache():
         return json.load(fh)
 
 
+def _ultimo_tipo_pendiente(placa: str):
+    """Último tipo encolado (aún sin sincronizar) para esa placa, o None."""
+    if not os.path.exists(COLA_PATH):
+        return None
+    with open(COLA_PATH) as fh:
+        cola = json.load(fh)
+    for ev in reversed(cola):
+        if ev["placa"] == placa:
+            return ev["tipo"]
+    return None
+
+
 def _encolar(placa: str, tipo: str):
     cola = []
     if os.path.exists(COLA_PATH):
@@ -93,7 +105,8 @@ def validar_manual(placa: str):
         print(f"INVÁLIDO — {placa} está inactiva")
         return False
 
-    tipo = "salida" if ultimo_tipo_registro(placa) == "entrada" else "entrada"
+    ultimo = _ultimo_tipo_pendiente(placa) or ultimo_tipo_registro(placa)
+    tipo = "salida" if ultimo == "entrada" else "entrada"
     _encolar(placa, tipo)
     print(f"VÁLIDO (modo contingencia) — {placa} ({registro['nombre']}) — {tipo.upper()}")
     print("Registro encolado; se sincronizará automáticamente cuando vuelva la red.")

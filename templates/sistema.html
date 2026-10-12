@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{% block title %}Estado del sistema — Campus Parking{% endblock %}
+{% block content %}
+{{ ui.page_header('Estado del sistema',
+                  'Configuración de las notificaciones por correo (M3-06) y de las tareas programadas.') }}
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card-cp p-4 h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <h5 class="mb-0 me-auto">Notificaciones por correo</h5>
+        {% if email_cfg.configurado %}
+          {{ ui.badge('Configurado', 'success') }}
+        {% else %}
+          {{ ui.badge('No configurado', 'warning') }}
+        {% endif %}
+      </div>
+      <dl class="row mb-3">
+        <dt class="col-5 text-muted fw-normal">Servidor SMTP</dt>
+        <dd class="col-7 text-end mb-1">{{ email_cfg.host }}:{{ email_cfg.port }}</dd>
+        <dt class="col-5 text-muted fw-normal">Remitente</dt>
+        <dd class="col-7 text-end mb-1">{{ email_cfg.from_name }} &lt;{{ email_cfg.from_email }}&gt;</dd>
+      </dl>
+      {% if not email_cfg.configurado %}
+      <div class="alert alert-warning mb-0">
+        Define <strong>SMTP_USER</strong> y <strong>SMTP_PASSWORD</strong> en el archivo <code>.env</code>
+        para activar los recordatorios de reserva por correo.
+      </div>
+      {% else %}
+      <form method="post" action="{{ url_for('sistema_probar_email') }}">
+        {{ csrf_input() }}
+        <button type="submit" class="btn btn-cp">{{ ui.icon('refresh') }} Probar conexión SMTP</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card-cp p-4 h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <h5 class="mb-0 me-auto">Scheduler de recordatorios</h5>
+        {% if sched.activo %}
+          {{ ui.badge('Activo', 'success') }}
+        {% else %}
+          {{ ui.badge('Inactivo', 'secondary') }}
+        {% endif %}
+      </div>
+      {% if sched.jobs %}
+        <div class="table-responsive">
+          <table class="table-cp table mb-0">
+            <thead>
+              <tr>
+                <th>Trabajo</th>
+                <th>Próxima ejecución</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for job in sched.jobs %}
+              <tr>
+                <td>{{ job.nombre }}</td>
+                <td>{{ formatear_fecha(job.proxima_ejecucion) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+      <p class="text-muted mb-0">No hay tareas programadas.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

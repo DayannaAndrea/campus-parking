@@ -28,11 +28,16 @@ def init_db():
             nombre TEXT NOT NULL,
             placa TEXT UNIQUE NOT NULL,
             rol TEXT NOT NULL CHECK(rol IN ('estudiante','profesor','administrativo')),
+            email TEXT,
             token TEXT NOT NULL,
             activo INTEGER NOT NULL DEFAULT 1
         )
         """
     )
+    try:
+        conn.execute("ALTER TABLE usuarios ADD COLUMN email TEXT")
+    except sqlite3.OperationalError:
+        pass  # La columna ya existe
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS registros (
@@ -71,6 +76,11 @@ def init_db():
         )
         """
     )
+    # Sprint 3 — M3-06: agregar columna para tracking de recordatorios
+    try:
+        conn.execute("ALTER TABLE reservas ADD COLUMN recordatorio_enviado INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass  # La columna ya existe
     conn.commit()
 
     # Semilla de zonas si la tabla está vacía (para que el panel no arranque en cero)
