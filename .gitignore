@@ -1,4 +1,8 @@
 data/ 
 __pycache__/
+.pytest_cache/
 *.pyc 
-.venv/
+.venv/AGENTS.md
+.vscode/
+.env
+.env.local
