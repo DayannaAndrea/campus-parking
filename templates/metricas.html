@@ -1,15 +1,46 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Métricas — Campus Parking{% endblock %}
 {% block content %}
-<h2>Métrica histórica de ocupación</h2>
-<table class="table">
-  <thead><tr><th>Zona</th><th>Entradas históricas registradas</th></tr></thead>
-  <tbody>
-    {% for d in datos %}
-    <tr><td>{{ d.zona }}</td><td>{{ d.entradas }}</td></tr>
-    {% else %}
-    <tr><td colspan="2" class="text-muted">Aún no hay datos suficientes.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+{{ ui.page_header('Métrica histórica de ocupación',
+                  'Entradas registradas por zona en el sistema.') }}
+
+{% set max_entradas = datos | map(attribute='entradas') | max if datos else 0 %}
+
+<div class="card-cp p-3">
+  <div class="table-responsive">
+    <table class="table-cp table mb-0">
+      <thead>
+        <tr>
+          <th>Zona</th>
+          <th>Entradas históricas</th>
+          <th style="width: 40%;">Ocupación relativa</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in datos %}
+        <tr>
+          <td><strong>{{ d.zona }}</strong></td>
+          <td>{{ d.entradas }}</td>
+          <td>
+            <div class="progress progress-cp">
+              <div class="progress-bar"
+                   style="width: {{ 0 if max_entradas == 0 else d.entradas * 100 / max_entradas }}%;"></div>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3">
+            <div class="empty-state">
+              <div class="empty-icon">{{ ui.icon('chart') }}</div>
+              <p>Aún no hay datos suficientes.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

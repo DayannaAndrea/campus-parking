@@ -1,16 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Vigilante — Campus Parking{% endblock %}
+{% import "macros.html" as ui %}
+{% block title %}Validador — Campus Parking{% endblock %}
 {% block content %}
-<h2>Validador del vigilante</h2>
-<p class="text-muted">Escribe la placa que llega a portería (simula el escaneo del QR ya generado) y elige la zona a la que se dirige.</p>
+{{ ui.page_header('Validador del vigilante',
+                  'Escribe la placa que llega a portería (simula el escaneo del QR) y elige la zona a la que se dirige.') }}
 
 <div class="card-cp p-4 mb-4" style="max-width: 480px;">
   <form method="post">
+    {{ csrf_input() }}
     <div class="mb-3">
       <label class="form-label">Placa</label>
-      <input type="text" class="form-control text-uppercase" name="placa" required autofocus>
+      <input type="text" class="form-control text-uppercase" name="placa" placeholder="ABC123" required autofocus>
     </div>
-    <div class="mb-3">
+    <div class="mb-4">
       <label class="form-label">Zona destino</label>
       <select class="form-select" name="zona">
         {% for z in zonas %}
@@ -18,25 +20,29 @@
         {% endfor %}
       </select>
     </div>
-    <button type="submit" class="btn btn-cp">Validar / Escanear</button>
+    <button type="submit" class="btn btn-cp w-100">Validar / Escanear</button>
   </form>
 </div>
 
 {% if resultado %}
-  <div class="card-cp p-4" style="max-width: 480px;">
-    {% if resultado.valido %}
-      <div class="badge-valido mb-2">✔ VÁLIDO</div>
-      <p><strong>{{ resultado.placa }}</strong> — {{ resultado.tipo|upper }} registrada.</p>
-      {% if resultado.reserva %}
-        <p class="text-success">Reserva vigente: {{ resultado.reserva.hora_inicio }}–{{ resultado.reserva.hora_fin }} en {{ resultado.reserva.zona }}.</p>
-      {% else %}
-        <p class="text-muted">Sin reserva vigente para esta hora.</p>
-      {% endif %}
+<div class="card-cp p-4" style="max-width: 480px;">
+  {% if resultado.valido %}
+    <div class="badge-valido mb-2">
+      {{ ui.icon('check') }} VÁLIDO
+    </div>
+    <p class="mb-1"><strong>{{ resultado.placa }}</strong> — {{ resultado.tipo|upper }} registrada.</p>
+    {% if resultado.reserva %}
+      <p class="mb-2">Reserva vigente: {{ resultado.reserva.hora_inicio }}–{{ resultado.reserva.hora_fin }} en {{ resultado.reserva.zona }}.</p>
     {% else %}
-      <div class="badge-invalido mb-2">✘ INVÁLIDO</div>
-      <p>{{ resultado.mensaje }}</p>
+      <p class="text-muted mb-2">Sin reserva vigente para esta hora.</p>
     {% endif %}
     <small class="text-muted">Tiempo de validación: {{ resultado.duracion_ms }} ms</small>
-  </div>
+  {% else %}
+    <div class="badge-invalido mb-2">
+      {{ ui.icon('x') }} INVÁLIDO
+    </div>
+    <p class="mb-0">{{ resultado.mensaje }}</p>
+  {% endif %}
+</div>
 {% endif %}
 {% endblock %}

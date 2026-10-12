@@ -1,13 +1,16 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Reservar — Campus Parking{% endblock %}
 {% block content %}
-<h2>Reservar cupo por franja horaria</h2>
+{{ ui.page_header('Reservar cupo por franja horaria',
+                  'Elige una zona, fecha y franja para asegurar tu cupo.') }}
 
 <div class="card-cp p-4" style="max-width: 480px;">
   <form method="post">
+    {{ csrf_input() }}
     <div class="mb-3">
       <label class="form-label">Placa</label>
-      <input type="text" class="form-control text-uppercase" name="placa" required>
+      <input type="text" class="form-control text-uppercase" name="placa" placeholder="ABC123" required>
     </div>
     <div class="mb-3">
       <label class="form-label">Zona</label>
@@ -21,18 +24,20 @@
       <label class="form-label">Fecha</label>
       <input type="date" class="form-control" name="fecha" required>
     </div>
-    <div class="row">
-      <div class="col mb-3">
+    <div class="row g-2 mb-4">
+      <div class="col">
         <label class="form-label">Hora inicio</label>
         <input type="time" class="form-control" name="hora_inicio" required>
       </div>
-      <div class="col mb-3">
+      <div class="col">
         <label class="form-label">Hora fin</label>
         <input type="time" class="form-control" name="hora_fin" required>
       </div>
     </div>
-    <button type="submit" class="btn btn-cp">Reservar</button>
+    <button type="submit" class="btn btn-cp w-100">Reservar</button>
   </form>
 </div>
-<p class="text-muted mt-3">Si no ingresas dentro de los primeros 15 minutos de tu franja, el cupo se libera automáticamente (M3-02).</p>
+<p class="text-muted mt-3">
+  Si no ingresas dentro de los primeros 15 minutos de tu franja, el cupo se libera automáticamente (M3-02).
+</p>
 {% endblock %}

@@ -1,27 +1,29 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Contingencia — Campus Parking{% endblock %}
 {% block content %}
-<h2>Modo de contingencia por placa</h2>
-<p class="text-muted">Para cuando falla la red o el escáner: valida contra el caché local y encola el registro para sincronizar.</p>
+{{ ui.page_header('Modo de contingencia',
+                  'Para cuando falla la red o el escáner: valida contra el caché local y encola el registro para sincronizar.') }}
 
 <div class="card-cp p-4 mb-4" style="max-width: 480px;">
   <form method="post">
-    <div class="mb-3">
+    {{ csrf_input() }}
+    <div class="mb-4">
       <label class="form-label">Placa (ingreso manual)</label>
-      <input type="text" class="form-control text-uppercase" name="placa" required autofocus>
+      <input type="text" class="form-control text-uppercase" name="placa" placeholder="ABC123" required autofocus>
     </div>
-    <button type="submit" class="btn btn-cp">Validar manualmente</button>
+    <button type="submit" class="btn btn-cp w-100">Validar manualmente</button>
   </form>
 </div>
 
 {% if resultado %}
   <div class="card-cp p-4" style="max-width: 480px;">
     {% if resultado.valido %}
-      <div class="badge-valido mb-2">✔ VÁLIDO (contingencia)</div>
-      <p>Registro encolado para <strong>{{ resultado.placa }}</strong>. Se sincronizará cuando vuelva la red.</p>
+      <div class="badge-valido mb-2">{{ ui.icon('check') }} VÁLIDO (contingencia)</div>
+      <p class="mb-0">Registro encolado para <strong>{{ resultado.placa }}</strong>. Se sincronizará cuando vuelva la red.</p>
     {% else %}
-      <div class="badge-invalido mb-2">✘ INVÁLIDO</div>
-      <p>{{ resultado.placa }} no está en el caché local de placas autorizadas.</p>
+      <div class="badge-invalido mb-2">{{ ui.icon('x') }} INVÁLIDO</div>
+      <p class="mb-0">{{ resultado.placa }} no está en el caché local de placas autorizadas.</p>
     {% endif %}
   </div>
 {% endif %}

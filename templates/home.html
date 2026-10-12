@@ -1,51 +1,108 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Inicio — Campus Parking{% endblock %}
 {% block content %}
+{% set total_libres = panel | sum(attribute='disponibles') %}
+{% set total_aforo = panel | sum(attribute='aforo_maximo') %}
+
 <div class="hero-cp mb-4">
-  <h1 class="fw-bold">Sistema de Control de Entradas y Cupos</h1>
-  <p class="mb-0">Verificación por QR, cupos en tiempo real y reservas por horario — todo en un solo sistema.</p>
+  <h1>Sistema de Control de Entradas y Cupos</h1>
+  <p>Verificación por QR, cupos en tiempo real y reservas por horario — todo en un solo sistema.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><b>{{ total_ocupados }}</b><span>ocupados</span></div>
+    <div class="hero-stat"><b>{{ total_libres }}</b><span>cupos libres</span></div>
+    <div class="hero-stat"><b>{{ total_aforo }}</b><span>aforo total</span></div>
+  </div>
+  <a href="{{ url_for('disponibilidad') }}" class="btn btn-cp mt-3">Ver disponibilidad</a>
 </div>
 
+<h5 class="fw-bold mb-3">Estado actual por zona</h5>
 <div class="row g-3 mb-4">
   {% for z in panel %}
-  <div class="col-md-4">
-    <div class="zona-card {{ 'llena' if z.alerta_llena else '' }}">
-      <h5 class="fw-bold">{{ z.zona }}</h5>
-      <p class="mb-1">{{ z.disponibles }} cupos libres de {{ z.aforo_maximo }}</p>
-      <div class="progress progress-cp">
-        <div class="progress-bar" style="width: {{ z.porcentaje }}%; background: {{ '#B23A3A' if z.alerta_llena else '#FF7A45' }};"></div>
+  <div class="col-md-4 col-lg-3">
+    <div class="zona-card {{ 'llena' if z.alerta_llena else 'dentro' }}" data-zona="{{ z.zona }}">
+      <span class="zona-tag">Zona</span>
+      <h4 class="fw-bold mb-1">{{ z.zona }}</h4>
+      <p class="zona-count mb-2" data-count>{{ z.disponibles }}<small class="ms-1">libres</small></p>
+      <div class="d-flex justify-content-between mb-1">
+        <small class="text-muted">Ocupación</small>
+        <small class="text-muted" data-detalle>{{ z.ocupados }}/{{ z.aforo_maximo }}</small>
       </div>
-      {% if z.alerta_llena %}<small class="text-danger fw-bold">⚠ Zona llena</small>{% endif %}
+      <div class="progress progress-cp">
+        <div class="progress-bar" data-barra style="width: {{ z.porcentaje }}%;"></div>
+      </div>
+      {% if z.alerta_llena %}
+      <div class="zona-alerta text-danger fw-bold mt-2" data-alerta>{{ ui.icon('alert') }} Zona llena</div>
+      {% endif %}
     </div>
   </div>
   {% endfor %}
 </div>
 
-<div class="row g-3">
+<div class="row g-3 mb-4">
   <div class="col-md-4">
-    <div class="card-cp p-3 h-100">
+    <div class="card-cp p-4 h-100 d-flex flex-column">
+      <div class="icon-window orange mb-3">{{ ui.icon('qr') }}</div>
       <h5>Verificación QR</h5>
-      <p>Registra un vehículo, genera su QR y simula el escaneo del vigilante.</p>
-      <a href="{{ url_for('registro') }}" class="btn btn-cp btn-sm">Registrar vehículo</a>
-      <a href="{{ url_for('vigilante') }}" class="btn btn-cp-outline btn-sm mt-2">Ir al validador</a>
-      <a href="{{ url_for('usuarios_registrados') }}" class="btn btn-cp-outline btn-sm mt-2">Ver todos los registrados</a>
+      <p class="text-muted flex-grow-1">Registra un vehículo, genera su QR y simula el escaneo del vigilante.</p>
+      <div class="d-flex flex-column gap-2">
+        <a href="{{ url_for('registro') }}" class="btn btn-cp w-100">Registrar vehículo</a>
+        <a href="{{ url_for('vigilante') }}" class="btn btn-ghost w-100">Ir al validador</a>
+      </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card-cp p-3 h-100">
+    <div class="card-cp p-4 h-100 d-flex flex-column">
+      <div class="icon-window navy mb-3">{{ ui.icon('pin') }}</div>
       <h5>Panel de Cupos</h5>
-      <p>Cupos en tiempo real por zona, para portería y para el conductor.</p>
-      <a href="{{ url_for('panel') }}" class="btn btn-cp btn-sm">Ver panel</a>
-      <a href="{{ url_for('disponibilidad') }}" class="btn btn-cp-outline btn-sm mt-2">Vista del conductor</a>
+      <p class="text-muted flex-grow-1">Cupos en tiempo real por zona, para portería y para el conductor.</p>
+      <div class="d-flex flex-column gap-2">
+        <a href="{{ url_for('panel') }}" class="btn btn-cp w-100">Ver panel</a>
+        <a href="{{ url_for('disponibilidad') }}" class="btn btn-ghost w-100">Vista del conductor</a>
+      </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card-cp p-3 h-100">
+    <div class="card-cp p-4 h-100 d-flex flex-column">
+      <div class="icon-window green mb-3">{{ ui.icon('clock') }}</div>
       <h5>Reservas</h5>
-      <p>Reserva un cupo por franja horaria y consulta el historial.</p>
-      <a href="{{ url_for('reservar') }}" class="btn btn-cp btn-sm">Reservar</a>
-      <a href="{{ url_for('reporte_seguridad') }}" class="btn btn-cp-outline btn-sm mt-2">Reporte seguridad</a>
+      <p class="text-muted flex-grow-1">Reserva un cupo por franja horaria y consulta el historial.</p>
+      <div class="d-flex flex-column gap-2">
+        <a href="{{ url_for('reservar') }}" class="btn btn-cp w-100">Reservar</a>
+        <a href="{{ url_for('reporte_seguridad') }}" class="btn btn-ghost w-100">Reporte de seguridad</a>
+      </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function refrescarCupos() {
+  try {
+    const res = await fetch("{{ url_for('api_cupos') }}");
+    const zonas = await res.json();
+    zonas.forEach(z => {
+      const card = document.querySelector(`.zona-card[data-zona="${z.zona}"]`);
+      if (!card) return;
+      card.querySelector("[data-count]").innerHTML = `${z.disponibles}<small class="ms-1">libres</small>`;
+      card.querySelector("[data-detalle]").textContent = `${z.ocupados}/${z.aforo_maximo}`;
+      card.querySelector("[data-barra]").style.width = `${z.porcentaje}%`;
+      card.classList.toggle("llena", z.alerta_llena);
+      card.classList.toggle("dentro", !z.alerta_llena);
+      const aviso = card.querySelector("[data-alerta]");
+      if (z.alerta_llena && !aviso) {
+        const el = document.createElement("div");
+        el.className = "zona-alerta text-danger fw-bold mt-2";
+        el.dataset.alerta = "";
+        el.textContent = "! Zona llena";
+        card.appendChild(el);
+      } else if (!z.alerta_llena && aviso) {
+        aviso.remove();
+      }
+    });
+  } catch (e) {}
+}
+setInterval(refrescarCupos, 5000);
+</script>
 {% endblock %}

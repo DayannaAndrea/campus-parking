@@ -1,11 +1,14 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Panel de Cupos — Campus Parking{% endblock %}
 {% block content %}
-<h2>Panel de cupos — pantalla de portería</h2>
-<p class="text-muted">Se actualiza sola cada 4 segundos (simula tiempo real).</p>
+{{ ui.page_header('Panel de cupos',
+                  'Pantalla de portería — se actualiza sola cada 4 segundos (tiempo real).') }}
 
 <div id="panel" class="row g-3"></div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 async function cargarPanel() {
   const res = await fetch("{{ url_for('api_cupos') }}");
@@ -14,17 +17,22 @@ async function cargarPanel() {
   cont.innerHTML = "";
   zonas.forEach(z => {
     const col = document.createElement("div");
-    col.className = "col-md-4";
-    const alerta = z.alerta_llena ? "⚠ ZONA LLENA — redirigir" : "";
+    col.className = "col-md-4 col-lg-3";
     col.innerHTML = `
-      <div class="zona-card ${z.alerta_llena ? 'llena' : ''}">
-        <h4 class="fw-bold">${z.zona}</h4>
-        <p style="font-size:2rem; margin:0;">${z.disponibles}</p>
-        <p class="text-muted mb-2">cupos libres de ${z.aforo_maximo}</p>
-        <div class="progress progress-cp">
-          <div class="progress-bar" style="width:${z.porcentaje}%; background:${z.alerta_llena ? '#B23A3A' : '#FF7A45'};"></div>
+      <div class="zona-card ${z.alerta_llena ? 'llena' : 'dentro'}">
+        <span class="zona-tag">Zona</span>
+        <h4 class="fw-bold mb-1">${z.zona}</h4>
+        <p class="zona-count mb-2">${z.disponibles}<small class="ms-1">libres</small></p>
+        <div class="d-flex justify-content-between mb-1">
+          <small class="text-muted">Ocupación</small>
+          <small class="text-muted">${z.ocupados}/${z.aforo_maximo}</small>
         </div>
-        <small class="text-danger fw-bold">${alerta}</small>
+        <div class="progress progress-cp">
+          <div class="progress-bar" style="width:${z.porcentaje}%;"></div>
+        </div>
+        ${z.alerta_llena
+          ? '<div class="zona-alerta text-danger fw-bold mt-2"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Zona llena — redirigir</div>'
+          : ''}
       </div>`;
     cont.appendChild(col);
   });

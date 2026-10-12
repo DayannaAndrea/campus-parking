@@ -1,17 +1,27 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Disponibilidad — Campus Parking{% endblock %}
 {% block content %}
-<h2>Disponibilidad antes de entrar</h2>
-<p class="text-muted">Consulta pública, sin necesidad de iniciar sesión.</p>
+{{ ui.page_header('Disponibilidad antes de entrar',
+                  'Consulta pública, sin necesidad de iniciar sesión.') }}
 
 <div class="row g-3">
   {% for z in panel %}
-  <div class="col-md-4">
-    <div class="zona-card {{ 'llena' if z.alerta_llena else '' }} text-center">
-      <h4 class="fw-bold">{{ z.zona }}</h4>
-      <p style="font-size:2.2rem; margin:0;">{{ z.disponibles }}</p>
-      <p class="text-muted">cupos libres</p>
-      {% if z.alerta_llena %}<span class="text-danger fw-bold">Zona llena</span>{% endif %}
+  <div class="col-md-4 col-lg-3">
+    <div class="zona-card {{ 'llena' if z.alerta_llena else 'dentro' }}">
+      <span class="zona-tag">Zona</span>
+      <h4 class="fw-bold mb-1">{{ z.zona }}</h4>
+      <p class="zona-count mb-2">{{ z.disponibles }}<small class="ms-1">libres</small></p>
+      <div class="d-flex justify-content-between mb-1">
+        <small class="text-muted">Ocupación</small>
+        <small class="text-muted">{{ z.ocupados }}/{{ z.aforo_maximo }}</small>
+      </div>
+      <div class="progress progress-cp">
+        <div class="progress-bar" style="width: {{ z.porcentaje }}%;"></div>
+      </div>
+      {% if z.alerta_llena %}
+      <div class="zona-alerta text-danger fw-bold mt-2">{{ ui.icon('alert') }} Zona llena</div>
+      {% endif %}
     </div>
   </div>
   {% endfor %}

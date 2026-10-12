@@ -1,11 +1,16 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Mi QR — Campus Parking{% endblock %}
 {% block content %}
-<h2>Tu código QR</h2>
-<p class="text-muted">Placa: <strong>{{ placa }}</strong> — muéstralo en portería o descárgalo.</p>
+{{ ui.page_header('Tu código QR',
+                  'Placa ' ~ placa ~ ' — muéstralo en portería o descárgalo.') }}
 
-<div class="card-cp p-4 text-center" style="max-width: 360px;">
-  <img src="{{ url_for('qr_imagen', placa=placa) }}" alt="QR {{ placa }}" class="img-fluid mb-3">
-  <a href="{{ url_for('qr_imagen', placa=placa) }}" download="{{ placa }}.png" class="btn btn-cp">Descargar QR</a>
+<div class="card-cp p-4 text-center" style="max-width: 380px;">
+  <img src="{{ url_for('qr_imagen', placa=placa) }}" alt="QR {{ placa }}"
+       class="img-fluid mb-3" style="border-radius: 12px;">
+  <a href="{{ url_for('qr_imagen', placa=placa) }}" download="{{ placa }}.png" class="btn btn-cp w-100">
+    {{ ui.icon('download') }} Descargar QR
+  </a>
+  <p class="text-muted mt-3 mb-0">QR para {{ placa }} — Campus Parking.</p>
 </div>
 {% endblock %}

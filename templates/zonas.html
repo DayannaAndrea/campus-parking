@@ -1,28 +1,52 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Zonas — Campus Parking{% endblock %}
 {% block content %}
-<h2>Zonas y aforo máximo</h2>
+{{ ui.page_header('Zonas y aforo máximo',
+                  'Define las zonas del campus y su capacidad máxima de vehículos.') }}
 
 <div class="card-cp p-4 mb-4" style="max-width: 480px;">
   <form method="post">
+    {{ csrf_input() }}
     <div class="mb-3">
       <label class="form-label">Nombre de la zona</label>
-      <input type="text" class="form-control" name="nombre" required>
+      <input type="text" class="form-control" name="nombre" placeholder="Ej. Torre 1" required>
     </div>
-    <div class="mb-3">
+    <div class="mb-4">
       <label class="form-label">Aforo máximo</label>
-      <input type="number" class="form-control" name="aforo" required min="1">
+      <input type="number" class="form-control" name="aforo" placeholder="50" required min="1">
     </div>
-    <button type="submit" class="btn btn-cp">Guardar zona</button>
+    <button type="submit" class="btn btn-cp w-100">Guardar zona</button>
   </form>
 </div>
 
-<table class="table">
-  <thead><tr><th>Zona</th><th>Aforo máximo</th></tr></thead>
-  <tbody>
-    {% for z in zonas %}
-    <tr><td>{{ z.nombre }}</td><td>{{ z.aforo_maximo }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="card-cp p-3">
+  <div class="table-responsive">
+    <table class="table-cp table mb-0">
+      <thead>
+        <tr>
+          <th>Zona</th>
+          <th>Aforo máximo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for z in zonas %}
+        <tr>
+          <td><strong>{{ z.nombre }}</strong></td>
+          <td>{{ z.aforo_maximo }} cupos</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="2">
+            <div class="empty-state">
+              <div class="empty-icon">{{ ui.icon('pin') }}</div>
+              <p>No hay zonas guardadas. Crea la primera arriba.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

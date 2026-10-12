@@ -1,27 +1,55 @@
 {% extends "base.html" %}
+{% import "macros.html" as ui %}
 {% block title %}Historial — Campus Parking{% endblock %}
 {% block content %}
-<h2>Historial de entradas y salidas</h2>
+{{ ui.page_header('Historial de entradas y salidas',
+                  'Filtra por placa o exporta el historial a CSV.') }}
 
-<form method="get" class="d-flex gap-2 mb-3" style="max-width: 420px;">
-  <input type="text" class="form-control text-uppercase" name="placa" placeholder="Filtrar por placa" value="{{ placa or '' }}">
-  <button type="submit" class="btn btn-cp-outline">Buscar</button>
-</form>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <form method="get" class="d-flex gap-2" style="max-width: 420px; flex:1; min-width:260px;">
+    <input type="text" class="form-control text-uppercase" name="placa" placeholder="Filtrar por placa" value="{{ placa or '' }}">
+    <button type="submit" class="btn btn-cp-outline">{{ ui.icon('search') }} Buscar</button>
+  </form>
+  <a href="{{ url_for('historial_csv_export', placa=placa) }}" class="btn btn-cp">
+    {{ ui.icon('download') }} Exportar CSV
+  </a>
+</div>
 
-<a href="{{ url_for('historial_csv_export', placa=placa) }}" class="btn btn-cp mb-3">⬇ Exportar CSV</a>
-
-<table class="table">
-  <thead><tr><th>Tipo</th><th>Método</th><th>Fecha/Hora</th></tr></thead>
-  <tbody>
-    {% for f in filas %}
-    <tr>
-      <td>{{ f.tipo|upper }}</td>
-      <td>{{ f.metodo }}</td>
-      <td>{{ f.timestamp }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="3" class="text-muted">Escribe una placa para ver su historial.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="card-cp p-3">
+  <div class="table-responsive">
+    <table class="table-cp table mb-0">
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Método</th>
+          <th>Fecha / Hora</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in filas %}
+        <tr>
+          <td>
+            {% if f.tipo|upper == 'ENTRADA' %}
+              {{ ui.badge('Entrada', 'success') }}
+            {% else %}
+              {{ ui.badge('Salida', 'warning') }}
+            {% endif %}
+          </td>
+          <td>{{ f.metodo }}</td>
+          <td>{{ formatear_fecha(f.timestamp) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3">
+            <div class="empty-state">
+              <div class="empty-icon">{{ ui.icon('list') }}</div>
+              <p>{% if placa %}Sin movimientos para {{ placa }}.{% else %}Escribe una placa para ver su historial.{% endif %}</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
