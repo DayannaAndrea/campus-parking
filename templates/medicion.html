@@ -62,7 +62,7 @@
     <div class="alert alert-warning mb-2"><strong>AÚN NO CUMPLE.</strong> Mejor racha: {{ r.mejor_racha }} de {{ r.requeridos }} días hábiles consecutivos que cumplen (racha actual: {{ r.racha }}).</div>
   {% endif %}
   <div class="progress progress-cp mb-2">
-    <div class="progress-bar" style="width: {{ [100, (r.mejor_racha * 100 / r.requeridos)|round]|min }}%; background:#1F9D55;"></div>
+    <div class="progress-bar" style="width: {{ [100, (r.mejor_racha * 100 / r.requeridos)|round]|min }}%; background:#1a7f4b;"></div>
   </div>
   <small class="text-muted">
     {{ r.total_mediciones }} mediciones en total
