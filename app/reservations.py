@@ -14,13 +14,18 @@ from datetime import datetime, timedelta
 
 from app.db import get_conn
 from app.email_service import enviar_email
-from app.email_templates import template_recordatorio_reserva, template_recordatorio_texto
+from app.email_templates import (
+    template_recordatorio_reserva,
+    template_recordatorio_texto,
+    template_confirmacion_reserva,
+    template_confirmacion_texto
+)
 
 TOLERANCIA_NOSHOW_MIN = 15
 VENTANA_RECORDATORIO_MIN = 15
 
 
-def crear_reserva(placa: str, zona: str, fecha: str, hora_inicio: str, hora_fin: str):
+def crear_reserva(placa: str, zona: str, fecha: str, hora_inicio: str, hora_fin: str, enviar_confirmacion: bool = True):
     placa = placa.strip().upper()
     try:
         hora_ini = datetime.strptime(hora_inicio, "%H:%M").time()
@@ -32,7 +37,8 @@ def crear_reserva(placa: str, zona: str, fecha: str, hora_inicio: str, hora_fin:
         raise ValueError("La hora de fin debe ser mayor que la de inicio.")
 
     conn = get_conn()
-    if not conn.execute("SELECT 1 FROM usuarios WHERE placa = ?", (placa,)).fetchone():
+    usuario = conn.execute("SELECT nombre, email FROM usuarios WHERE placa = ?", (placa,)).fetchone()
+    if not usuario:
         conn.close()
         raise ValueError(f"La placa {placa} no está registrada. Regístrala antes de reservar.")
 
@@ -67,6 +73,34 @@ def crear_reserva(placa: str, zona: str, fecha: str, hora_inicio: str, hora_fin:
     )
     conn.commit()
     conn.close()
+
+    # Enviar email de confirmación INMEDIATAMENTE
+    if enviar_confirmacion and usuario["email"]:
+        print(f"[CONFIRMACION] Enviando email de confirmación a {usuario['email']}...")
+        asunto = "Confirmacion de Reserva - Campus Parking"
+        cuerpo_texto = template_confirmacion_texto(
+            nombre=usuario['nombre'],
+            placa=placa,
+            zona=zona,
+            fecha=fecha,
+            hora_inicio=hora_inicio,
+            hora_fin=hora_fin
+        )
+        cuerpo_html = template_confirmacion_reserva(
+            nombre=usuario['nombre'],
+            placa=placa,
+            zona=zona,
+            fecha=fecha,
+            hora_inicio=hora_inicio,
+            hora_fin=hora_fin
+        )
+        resultado = enviar_email(usuario["email"], asunto, cuerpo_texto, cuerpo_html)
+        if resultado:
+            print(f"[CONFIRMACION] Email de confirmacion enviado exitosamente a {usuario['email']}")
+        else:
+            print(f"[CONFIRMACION] Error: No se pudo enviar el email de confirmacion")
+    elif not usuario["email"]:
+        print(f"[CONFIRMACION] Advertencia: Usuario {placa} no tiene email registrado")
 
 
 def cancelar_reserva(reserva_id: int) -> str:

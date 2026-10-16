@@ -10,7 +10,10 @@
     {{ csrf_input() }}
     <div class="mb-3">
       <label class="form-label">Placa</label>
-      <input type="text" class="form-control text-uppercase" name="placa" placeholder="ABC123" required>
+      <input type="text" class="form-control text-uppercase" name="placa" value="{{ placa }}" readonly>
+      <div class="form-text">
+        Reserva para el vehículo: <strong>{{ placa }}</strong>
+      </div>
     </div>
     <div class="mb-3">
       <label class="form-label">Zona</label>
@@ -37,7 +40,12 @@
     <button type="submit" class="btn btn-cp w-100">Reservar</button>
   </form>
 </div>
-<p class="text-muted mt-3">
-  Si no ingresas dentro de los primeros 15 minutos de tu franja, el cupo se libera automáticamente (M3-02).
+<div class="alert alert-info mt-3" role="alert">
+  <strong>📧 Confirmación por correo:</strong> Al crear tu reserva, recibirás un email de confirmación
+  con todos los detalles. También recibirás un recordatorio 15 minutos antes de tu hora de inicio.
+</div>
+<p class="text-muted mt-2">
+  <strong>⚠️ Importante:</strong> Si no ingresas dentro de los primeros 15 minutos de tu franja,
+  el cupo se libera automáticamente (M3-02).
 </p>
 {% endblock %}
