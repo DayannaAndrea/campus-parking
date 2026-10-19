@@ -52,6 +52,23 @@
               <li><a class="dropdown-item" href="{{ url_for('sistema') }}">Estado del sistema</a></li>
             </ul>
           </li>
+          {% if session.get('user_email') %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              👤 {{ session.get('user_name') }}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">Mi Dashboard</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('mi_qr', placa=session.get('user_placa')) }}">Mi QR</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Cerrar Sesión</a></li>
+            </ul>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link btn btn-outline-primary" href="{{ url_for('login') }}">Iniciar Sesión</a>
+          </li>
+          {% endif %}
         </ul>
       </div>
     </div>

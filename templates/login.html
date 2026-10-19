@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar Sesión - Campus Parking{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-5">
+        <div class="text-center mb-4">
+          <h1 class="display-6">🅿️</h1>
+          <h2 class="h3">Iniciar Sesión</h2>
+          <p class="text-muted">Ingresa con tu correo institucional</p>
+        </div>
+
+        <form method="post">
+          {{ csrf_input() }}
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Correo Electrónico</label>
+            <input
+              type="email"
+              class="form-control form-control-lg"
+              id="email"
+              name="email"
+              placeholder="tu-correo@campus.edu"
+              required
+              autofocus
+              autocomplete="email">
+            <div class="form-text">
+              Usa el correo con el que registraste tu vehículo
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 mb-3">
+            <button type="submit" class="btn btn-primary btn-lg">
+              Iniciar Sesión
+            </button>
+          </div>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="text-center">
+          <p class="text-muted mb-2">¿Aún no tienes cuenta?</p>
+          <a href="{{ url_for('registro') }}" class="btn btn-outline-secondary">
+            Registrar Vehículo
+          </a>
+        </div>
+
+        <div class="alert alert-info mt-4" role="alert">
+          <strong>ℹ️ Nota:</strong> Solo necesitas tu correo electrónico para iniciar sesión.
+          Asegúrate de usar el mismo correo con el que registraste tu vehículo.
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-4">
+      <p class="text-muted small">
+        Al iniciar sesión podrás:
+      </p>
+      <ul class="list-unstyled text-muted small">
+        <li>✓ Reservar cupos de parqueadero</li>
+        <li>✓ Ver tu historial de reservas</li>
+        <li>✓ Recibir recordatorios por correo</li>
+        <li>✓ Descargar tu código QR</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card {
+    border: none;
+    border-radius: 12px;
+  }
+  .btn-lg {
+    padding: 12px 20px;
+  }
+  .form-control-lg:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #5568d3 0%, #65408b 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+</style>
+{% endblock %}

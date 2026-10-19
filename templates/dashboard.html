@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Campus Parking{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col">
+    <h1 class="display-6">Dashboard</h1>
+    <p class="text-muted">Bienvenido/a, {{ usuario.nombre }}</p>
+  </div>
+</div>
+
+<!-- User Info Card -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">👤 Tu Información</h5>
+        <hr>
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Nombre:</dt>
+          <dd class="col-sm-8">{{ usuario.nombre }}</dd>
+
+          <dt class="col-sm-4">Placa:</dt>
+          <dd class="col-sm-8"><span class="badge bg-primary">{{ usuario.placa }}</span></dd>
+
+          <dt class="col-sm-4">Rol:</dt>
+          <dd class="col-sm-8">{{ usuario.rol|capitalize }}</dd>
+
+          <dt class="col-sm-4">Email:</dt>
+          <dd class="col-sm-8">{{ usuario.email or 'No especificado' }}</dd>
+
+          <dt class="col-sm-4">Estado:</dt>
+          <dd class="col-sm-8">
+            {% if usuario.activo %}
+              <span class="badge bg-success">Activo</span>
+            {% else %}
+              <span class="badge bg-danger">Inactivo</span>
+            {% endif %}
+          </dd>
+        </dl>
+        <hr>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('mi_qr', placa=usuario.placa) }}" class="btn btn-primary btn-sm">
+            Ver mi QR
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <!-- Quick Actions -->
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <h5 class="card-title">⚡ Acciones Rápidas</h5>
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <a href="{{ url_for('reservar') }}" class="btn btn-success w-100">
+              <span class="d-block">🅿️</span>
+              Reservar Cupo
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{{ url_for('mis_reservas', placa=usuario.placa) }}" class="btn btn-info w-100 text-white">
+              <span class="d-block">📋</span>
+              Mis Reservas
+            </a>
+          </div>
+          <div class="col-md-4">
+            <a href="{{ url_for('disponibilidad') }}" class="btn btn-warning w-100">
+              <span class="d-block">📊</span>
+              Disponibilidad
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parking Availability -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">🅿️ Disponibilidad Actual</h5>
+        <hr>
+        <div class="row g-3">
+          {% for z in panel %}
+          <div class="col-md-6">
+            <div class="card border-{{ 'danger' if z.disponibles == 0 else 'success' if z.disponibles > 10 else 'warning' }}">
+              <div class="card-body">
+                <h6 class="card-title">{{ z.zona }}</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="fs-4 fw-bold">{{ z.disponibles }}</span>
+                    <span class="text-muted">/ {{ z.aforo_maximo }}</span>
+                  </div>
+                  <div>
+                    {% if z.disponibles == 0 %}
+                      <span class="badge bg-danger">Lleno</span>
+                    {% elif z.disponibles <= 10 %}
+                      <span class="badge bg-warning text-dark">Pocos cupos</span>
+                    {% else %}
+                      <span class="badge bg-success">Disponible</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="progress mt-2" style="height: 8px;">
+                  <div class="progress-bar bg-{{ 'danger' if z.disponibles == 0 else 'success' if z.disponibles > 10 else 'warning' }}"
+                       role="progressbar"
+                       style="width: {{ z.porcentaje }}%"
+                       aria-valuenow="{{ z.ocupados }}"
+                       aria-valuemin="0"
+                       aria-valuemax="{{ z.aforo_maximo }}">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Reservations -->
+<div class="row">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title mb-0">📅 Mis Últimas Reservas</h5>
+          <a href="{{ url_for('mis_reservas', placa=usuario.placa) }}" class="btn btn-sm btn-outline-primary">
+            Ver todas
+          </a>
+        </div>
+        <hr>
+
+        {% if reservas %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Zona</th>
+                <th>Fecha</th>
+                <th>Horario</th>
+                <th>Estado</th>
+                <th>Recordatorio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in reservas %}
+              <tr>
+                <td><strong>{{ r.zona }}</strong></td>
+                <td>{{ r.fecha }}</td>
+                <td>{{ r.hora_inicio }} - {{ r.hora_fin }}</td>
+                <td>
+                  {% if r.estado == 'activa' %}
+                    <span class="badge bg-success">Activa</span>
+                  {% elif r.estado == 'usada' %}
+                    <span class="badge bg-info">Usada</span>
+                  {% elif r.estado == 'liberada' %}
+                    <span class="badge bg-warning text-dark">Liberada</span>
+                  {% elif r.estado == 'cancelada' %}
+                    <span class="badge bg-danger">Cancelada</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if r.recordatorio_enviado %}
+                    <span class="text-success">✓ Enviado</span>
+                  {% else %}
+                    <span class="text-muted">Pendiente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center" role="alert">
+          <p class="mb-2">📭 No tienes reservas aún</p>
+          <a href="{{ url_for('reservar') }}" class="btn btn-sm btn-primary">
+            Crear mi primera reserva
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .card {
+    border: none;
+    border-radius: 12px;
+  }
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .btn {
+    border-radius: 8px;
+  }
+  dl dt {
+    font-weight: 600;
+    color: #666;
+  }
+  dl dd {
+    color: #333;
+  }
+</style>
+{% endblock %}

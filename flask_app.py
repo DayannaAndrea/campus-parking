@@ -19,9 +19,12 @@ try:
     load_dotenv()
 except ImportError:  # python-dotenv opcional: si falta, se usan las variables del entorno
     pass
+except (UnicodeDecodeError, Exception) as e:  # Si hay problema de encoding, continuar sin .env
+    print(f"[WARNING] No se pudo cargar .env file: {e}. Usando variables de entorno del sistema.")
 
-from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify, session
 from markupsafe import Markup
+from functools import wraps
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -61,6 +64,17 @@ def utilidades_contexto():
 iniciar_scheduler()
 
 
+def login_required(f):
+    """Decorator para proteger rutas que requieren autenticación."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_email' not in session:
+            flash("Debes iniciar sesión para acceder a esta página.", "warning")
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @app.before_request
 def _sincronizar_cola_contingencia():
     """Vuelca en la BD cualquier evento encolado por el modo contingencia (M1-04)."""
@@ -79,6 +93,80 @@ def home():
     panel = zones.panel_cupos()
     total_ocupados = sum(z["ocupados"] for z in panel)
     return render_template("home.html", panel=panel, total_ocupados=total_ocupados)
+
+
+# ---------------------------------------------------------------
+# Login y autenticación con email
+# ---------------------------------------------------------------
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Por favor ingresa tu correo electrónico.", "danger")
+            return render_template("login.html")
+
+        # Verificar si el email existe en la base de datos
+        conn = get_conn()
+        usuario = conn.execute(
+            "SELECT nombre, placa, email FROM usuarios WHERE LOWER(email) = ?",
+            (email,)
+        ).fetchone()
+        conn.close()
+
+        if usuario:
+            # Guardar información en la sesión
+            session['user_email'] = usuario['email']
+            session['user_name'] = usuario['nombre']
+            session['user_placa'] = usuario['placa']
+
+            flash(f"¡Bienvenido/a {usuario['nombre']}!", "success")
+
+            # Redirigir a la página solicitada o al dashboard
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+            return redirect(url_for('dashboard'))
+        else:
+            flash("No existe un usuario registrado con ese correo electrónico. Por favor regístrate primero.", "danger")
+            return redirect(url_for('registro'))
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    nombre = session.get('user_name', 'Usuario')
+    session.clear()
+    flash(f"¡Hasta pronto, {nombre}!", "info")
+    return redirect(url_for('home'))
+
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    """Dashboard del usuario después de iniciar sesión."""
+    placa = session.get('user_placa')
+
+    # Obtener reservas del usuario
+    liberadas = reservations.liberar_no_shows()
+    conn = get_conn()
+    reservas = conn.execute(
+        "SELECT * FROM reservas WHERE placa = ? ORDER BY fecha DESC, hora_inicio DESC LIMIT 5",
+        (placa,)
+    ).fetchall()
+
+    # Obtener información del usuario
+    usuario = conn.execute("SELECT * FROM usuarios WHERE placa = ?", (placa,)).fetchone()
+    conn.close()
+
+    return render_template(
+        "dashboard.html",
+        usuario=dict(usuario),
+        reservas=[dict(r) for r in reservas],
+        panel=zones.panel_cupos()
+    )
 
 
 # ---------------------------------------------------------------
@@ -208,21 +296,25 @@ def metricas():
 # Sprint 3 — M3-01/M3-02: reservas
 # ---------------------------------------------------------------
 @app.route("/reservar", methods=["GET", "POST"])
+@login_required
 def reservar():
     if request.method == "POST":
-        placa = request.form["placa"].strip().upper()
+        # Usar la placa del usuario logueado
+        placa = session.get('user_placa')
         zona = request.form["zona"]
         fecha = request.form["fecha"]
         hora_inicio = request.form["hora_inicio"]
         hora_fin = request.form["hora_fin"]
         try:
-            reservations.crear_reserva(placa, zona, fecha, hora_inicio, hora_fin)
+            reservations.crear_reserva(placa, zona, fecha, hora_inicio, hora_fin, enviar_confirmacion=True)
+            flash(f"¡Reserva creada exitosamente! Revisa tu correo para ver la confirmación.", "success")
         except ValueError as e:
             flash(str(e), "danger")
-            return render_template("reservar.html", zonas=zones.listar_zonas())
-        flash(f"Reserva creada para {placa} en {zona} ({hora_inicio}–{hora_fin}).", "success")
-        return redirect(url_for("mis_reservas", placa=placa))
-    return render_template("reservar.html", zonas=zones.listar_zonas())
+            return render_template("reservar.html", zonas=zones.listar_zonas(), placa=placa)
+        return redirect(url_for("dashboard"))
+
+    placa = session.get('user_placa')
+    return render_template("reservar.html", zonas=zones.listar_zonas(), placa=placa)
 
 
 @app.route("/mis-reservas/<placa>")
@@ -366,4 +458,5 @@ if __name__ == "__main__":
         debug=os.getenv("FLASK_DEBUG", "0") == "1",
         host="0.0.0.0",
         port=int(os.getenv("PORT", "5050")),
+        load_dotenv=False,  # Ya cargamos dotenv arriba con manejo de errores
     )

@@ -16,9 +16,10 @@ class EmailConfig:
 
     SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-    SMTP_USER = os.getenv("SMTP_USER", "")
-    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-    FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@campus-parking.edu")
+    # Priorizar EMAIL_ADDRESS y EMAIL_PASSWORD de .env.example
+    SMTP_USER = os.getenv("EMAIL_ADDRESS") or os.getenv("SMTP_USER", "")
+    SMTP_PASSWORD = os.getenv("EMAIL_PASSWORD") or os.getenv("SMTP_PASSWORD", "")
+    FROM_EMAIL = os.getenv("EMAIL_ADDRESS") or os.getenv("FROM_EMAIL", "noreply@campus-parking.edu")
     FROM_NAME = os.getenv("FROM_NAME", "Campus Parking")
 
     @classmethod
