@@ -24,36 +24,31 @@
             <a class="nav-link" href="{{ url_for('home') }}">Inicio</a>
           </li>
           <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Conductor</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="{{ url_for('registro') }}">Registrar vehículo y QR</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('disponibilidad') }}">Disponibilidad de cupos</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('reservar') }}">Reservar cupo</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Portería</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ url_for('registro') }}">Registro / QR</a></li>
               <li><a class="dropdown-item" href="{{ url_for('vigilante') }}">Validador</a></li>
               <li><a class="dropdown-item" href="{{ url_for('contingencia') }}">Contingencia</a></li>
-              <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="{{ url_for('usuarios_registrados') }}">Vehículos registrados</a></li>
-            </ul>
-          </li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Parqueadero</a>
-            <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="{{ url_for('panel') }}">Panel de cupos</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('disponibilidad') }}">Disponibilidad</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('zonas_admin') }}">Zonas</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('metricas') }}">Métricas</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('medicion') }}">Medición de ingreso</a></li>
             </ul>
           </li>
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Reservas</a>
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Administración</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ url_for('reservar') }}">Reservar cupo</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('historial') }}">Historial</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('usuarios_registrados') }}">Vehículos registrados</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('historial') }}">Historial de ingresos</a></li>
               <li><a class="dropdown-item" href="{{ url_for('reporte_seguridad') }}">Reporte de seguridad</a></li>
-            </ul>
-          </li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Sistema</a>
-            <ul class="dropdown-menu">
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ url_for('zonas_admin') }}">Zonas y aforo</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('metricas') }}">Ocupación histórica</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('medicion') }}">Medición de ingreso</a></li>
               <li><a class="dropdown-item" href="{{ url_for('sistema') }}">Estado del sistema</a></li>
             </ul>
           </li>

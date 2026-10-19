@@ -13,7 +13,6 @@
     <div class="hero-stat"><b>{{ total_libres }}</b><span>cupos libres</span></div>
     <div class="hero-stat"><b>{{ total_aforo }}</b><span>aforo total</span></div>
   </div>
-  <a href="{{ url_for('disponibilidad') }}" class="btn btn-cp mt-3">Ver disponibilidad</a>
 </div>
 
 <h5 class="fw-bold mb-3">Estado actual por zona</h5>
@@ -42,42 +41,35 @@
 <div class="row g-3 mb-4">
   <div class="col-md-4">
     <div class="card-cp p-4 h-100 d-flex flex-column">
-      <div class="icon-window orange mb-3">{{ ui.icon('qr') }}</div>
-      <h5>Verificación QR</h5>
-      <p class="text-muted flex-grow-1">Registra un vehículo, genera su QR y simula el escaneo del vigilante.</p>
+      <h5>Conductor</h5>
+      <p class="text-muted flex-grow-1">Genera tu QR, consulta si hay cupo y reserva una franja horaria.</p>
       <div class="d-flex flex-column gap-2">
-        <a href="{{ url_for('registro') }}" class="btn btn-cp w-100">Registrar vehículo</a>
-        <a href="{{ url_for('vigilante') }}" class="btn btn-ghost w-100">Ir al validador</a>
+        <a href="{{ url_for('registro') }}" class="btn btn-cp w-100">Registrar vehículo y QR</a>
+        <a href="{{ url_for('disponibilidad') }}" class="btn btn-ghost w-100">Ver disponibilidad</a>
+        <a href="{{ url_for('reservar') }}" class="btn btn-ghost w-100">Reservar cupo</a>
       </div>
     </div>
   </div>
   <div class="col-md-4">
     <div class="card-cp p-4 h-100 d-flex flex-column">
-      <div class="icon-window navy mb-3">{{ ui.icon('pin') }}</div>
-      <h5>Panel de Cupos</h5>
-      <p class="text-muted flex-grow-1">Cupos en tiempo real por zona, para portería y para el conductor.</p>
+      <h5>Portería</h5>
+      <p class="text-muted flex-grow-1">Valida el QR del vehículo y sigue los cupos en tiempo real.</p>
       <div class="d-flex flex-column gap-2">
-        <a href="{{ url_for('panel') }}" class="btn btn-cp w-100">Ver panel</a>
-        <a href="{{ url_for('disponibilidad') }}" class="btn btn-ghost w-100">Vista del conductor</a>
+        <a href="{{ url_for('vigilante') }}" class="btn btn-cp w-100">Validador</a>
+        <a href="{{ url_for('panel') }}" class="btn btn-ghost w-100">Panel de cupos</a>
+        <a href="{{ url_for('contingencia') }}" class="btn btn-ghost w-100">Modo contingencia</a>
       </div>
     </div>
   </div>
   <div class="col-md-4">
     <div class="card-cp p-4 h-100 d-flex flex-column">
-      <div class="icon-window green mb-3">{{ ui.icon('clock') }}</div>
-      <h5>Reservas</h5>
-      <p class="text-muted flex-grow-1">Reserva un cupo por franja horaria y consulta el historial.</p>
+      <h5>Administración</h5>
+      <p class="text-muted flex-grow-1">Consulta registros y reportes, configura las zonas y mide el tiempo de ingreso.</p>
       <div class="d-flex flex-column gap-2">
-        <a href="{{ url_for('reservar') }}" class="btn btn-cp w-100">Reservar</a>
+        <a href="{{ url_for('usuarios_registrados') }}" class="btn btn-cp w-100">Vehículos registrados</a>
         <a href="{{ url_for('reporte_seguridad') }}" class="btn btn-ghost w-100">Reporte de seguridad</a>
+        <a href="{{ url_for('medicion') }}" class="btn btn-ghost w-100">Medición de ingreso</a>
       </div>
-    </div>
-  </div>
-  <div class="col-md-12">
-    <div class="card-cp p-3">
-      <h5>Medición del tiempo de ingreso</h5>
-      <p class="mb-2">Cronometra cada ingreso en portería y comprueba si se cumple la meta de 3 minutos o menos durante 5 días consecutivos.</p>
-      <a href="{{ url_for('medicion') }}" class="btn btn-cp btn-sm">Abrir medición</a>
     </div>
   </div>
 </div>
