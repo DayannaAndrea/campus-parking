@@ -46,8 +46,9 @@ def test_cancelar_libera_el_cupo_de_la_franja(bd_temporal):
     reservations.crear_reserva("BBB222", "Mini", "2099-01-01", "08:00", "09:00")  # ya hay cupo
 
 
-def test_ruta_cancelar_reserva(cliente, bd_temporal):
+def test_ruta_cancelar_reserva(cliente, bd_temporal, como):
     rid = _reserva()
+    como(cliente, "conductor", placa="ABC123")  # el dueño de la reserva
     r = cliente.post(f"/reservas/{rid}/cancelar", follow_redirects=True)
     assert r.status_code == 200 and "Reserva cancelada" in r.get_data(as_text=True)
 
@@ -73,8 +74,9 @@ def test_baja_de_placa_inexistente(bd_temporal):
         cambiar_estado_usuario("ZZZ999", False)
 
 
-def test_ruta_baja_actualiza_cache_de_contingencia(cliente, bd_temporal):
+def test_ruta_baja_actualiza_cache_de_contingencia(cliente, bd_temporal, como):
     from app import contingency as cont
+    como(cliente, "admin")
     generar_qr("Ana", "ABC123", "estudiante")
     cliente.post("/vehiculos/ABC123/estado", data={"activo": "0"})
     assert cont.validar_manual("ABC123") is False
@@ -154,7 +156,8 @@ def test_deshacer_borra_la_ultima(bd_temporal):
     assert aceptacion.evaluar()["total_mediciones"] == 1
 
 
-def test_pantalla_y_registro_de_medicion(cliente, bd_temporal):
+def test_pantalla_y_registro_de_medicion(cliente, bd_temporal, como):
+    como(cliente, "admin")
     assert cliente.get("/medicion").status_code == 200
     r = cliente.post("/medicion", data={"minutos": "2,5", "placa": "abc123"}, follow_redirects=True)
     assert "Medición registrada" in r.get_data(as_text=True)
@@ -163,12 +166,13 @@ def test_pantalla_y_registro_de_medicion(cliente, bd_temporal):
     assert "150.0" in cliente.get("/medicion/csv").get_data(as_text=True)
 
 
-def test_medicion_manual_invalida_muestra_error(cliente, bd_temporal):
+def test_medicion_manual_invalida_muestra_error(cliente, bd_temporal, como):
+    como(cliente, "admin")
     r = cliente.post("/medicion", data={"minutos": "0"}, follow_redirects=True)
     assert "entre 1 segundo y 60 minutos" in r.get_data(as_text=True)
 
 
-def test_formularios_nuevos_llevan_token_csrf(bd_temporal, monkeypatch):
+def test_formularios_nuevos_llevan_token_csrf(bd_temporal, monkeypatch, como):
     """Con CSRF activo, los formularios de cancelar, baja y medición deben enviar el token."""
     import re
     import flask_app
@@ -176,7 +180,7 @@ def test_formularios_nuevos_llevan_token_csrf(bd_temporal, monkeypatch):
 
     monkeypatch.setitem(flask_app.app.config, "CSRF_OFF", False)
     qr_generator.generar_qr("Prueba", "CSR123", "estudiante")
-    c = flask_app.app.test_client()
+    c = como(flask_app.app.test_client(), "admin")
     for ruta in ("/medicion", "/usuarios"):
         html = c.get(ruta).get_data(as_text=True)
         assert html.count('name="csrf_token"') == html.count("<form"), ruta

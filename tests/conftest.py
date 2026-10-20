@@ -48,3 +48,19 @@ def cliente(bd_temporal, monkeypatch):
     # La app usa DATA_DIR como global propio: apúntalo a la BD temporal.
     monkeypatch.setattr(flask_app, "DATA_DIR", db.DATA_DIR)
     return flask_app.app.test_client()
+
+
+def iniciar_sesion(cliente, rol, placa=None):
+    """Deja al cliente de pruebas con una sesión del rol indicado ('conductor', 'porteria', 'admin')."""
+    with cliente.session_transaction() as sess:
+        sess["rol"] = rol
+        sess["user_name"] = rol
+        if placa:
+            sess["user_placa"] = placa
+            sess["user_email"] = f"{placa.lower()}@campus.edu"
+    return cliente
+
+
+@pytest.fixture()
+def como():
+    return iniciar_sesion

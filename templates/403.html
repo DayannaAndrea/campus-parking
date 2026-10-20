@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% import "macros.html" as ui %}
+{# Página de error común (400, 403, 404, 500) #}
+{% block title %}{{ titulo or 'Acceso denegado' }} — Campus Parking{% endblock %}
+{% block content %}
+{{ ui.page_header(titulo or 'Acceso denegado', mensaje or 'Tu cuenta no tiene permiso para ver esta página.') }}
+<a href="{{ url_for('home') }}" class="btn btn-cp">Volver al inicio</a>
+{% endblock %}

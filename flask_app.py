@@ -22,7 +22,7 @@ except ImportError:  # python-dotenv opcional: si falta, se usan las variables d
 except (UnicodeDecodeError, Exception) as e:  # Si hay problema de encoding, continuar sin .env
     print(f"[WARNING] No se pudo cargar .env file: {e}. Usando variables de entorno del sistema.")
 
-from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, jsonify, session, abort
 from markupsafe import Markup
 from functools import wraps
 
@@ -36,6 +36,7 @@ from app.contingency import validar_manual, actualizar_cache, sincronizar_cola  
 from app import zones  # noqa: E402
 from app import reservations  # noqa: E402
 from app import csrf  # noqa: E402
+from app import auth  # noqa: E402
 from app.email_service import EmailConfig, test_email_connection  # noqa: E402
 from app import aceptacion  # noqa: E402
 from app.scheduler import iniciar_scheduler, estado_scheduler  # noqa: E402
@@ -58,21 +59,57 @@ def utilidades_contexto():
     def csrf_input():
         return Markup(f'<input type="hidden" name="csrf_token" value="{csrf.generar_token()}"/>')
 
-    return {"formatear_fecha": formatear_fecha, "csrf_input": csrf_input}
+    return {"formatear_fecha": formatear_fecha, "csrf_input": csrf_input,
+            "correo_activo": EmailConfig.is_configured()}
 
 # Sprint 3 — M3-06: Iniciar scheduler de recordatorios
 iniciar_scheduler()
 
 
-def login_required(f):
-    """Decorator para proteger rutas que requieren autenticación."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_email' not in session:
-            flash("Debes iniciar sesión para acceder a esta página.", "warning")
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-    return decorated_function
+def rol_requerido(*roles):
+    """Protege una ruta: sin sesión manda al login; con un rol no permitido responde 403.
+
+    Roles: 'conductor' (entra con su correo), 'porteria' y 'admin' (entran con su usuario).
+    """
+    def decorador(f):
+        @wraps(f)
+        def envoltura(*args, **kwargs):
+            rol = session.get("rol")
+            if rol is None:
+                flash("Debes iniciar sesión para acceder a esta página.", "warning")
+                return redirect(url_for("login", next=request.full_path.rstrip("?")))
+            if rol not in roles:
+                abort(403)
+            return f(*args, **kwargs)
+        return envoltura
+    return decorador
+
+
+login_required = rol_requerido("conductor")
+solo_porteria = rol_requerido("porteria", "admin")
+solo_admin = rol_requerido("admin")
+
+
+def _es_dueno(placa: str) -> bool:
+    return session.get("rol") == "conductor" and session.get("user_placa") == (placa or "").upper()
+
+
+def _siguiente_seguro(defecto: str) -> str:
+    """Evita redirecciones a otros sitios: solo rutas internas como '/reservar'."""
+    destino = request.args.get("next") or ""
+    if destino.startswith("/") and not destino.startswith("//") and "\\" not in destino:
+        return destino
+    return defecto
+
+
+def _iniciar_sesion(rol: str, nombre: str, placa: str = None, email: str = None) -> None:
+    session.clear()  # sesión nueva en cada ingreso
+    session["rol"] = rol
+    session["user_name"] = nombre
+    if placa:
+        session["user_placa"] = placa
+    if email:
+        session["user_email"] = email
 
 
 @app.before_request
@@ -88,51 +125,78 @@ def _proteger_contra_csrf():
         csrf.validar_csrf()
 
 
+ERRORES = {
+    400: ("Solicitud no válida", "El formulario venció o llegó incompleto. Recarga la página e inténtalo de nuevo."),
+    403: ("Acceso denegado", "Tu cuenta no tiene permiso para ver esta página."),
+    404: ("Página no encontrada", "La dirección que escribiste no existe."),
+    500: ("Error interno", "Algo falló de nuestro lado. Inténtalo de nuevo en un momento."),
+}
+
+
+@app.errorhandler(400)
+@app.errorhandler(403)
+@app.errorhandler(404)
+@app.errorhandler(500)
+def pagina_de_error(error):
+    codigo = getattr(error, "code", 500) or 500
+    titulo, mensaje = ERRORES.get(codigo, ERRORES[500])
+    return render_template("403.html", titulo=titulo, mensaje=mensaje), codigo
+
+
+def _inicio_del_rol():
+    """Pantalla de llegada de cada rol."""
+    return {"conductor": url_for("dashboard"), "porteria": url_for("vigilante"),
+            "admin": url_for("resumen_admin")}.get(session.get("rol"), url_for("home"))
+
+
 @app.route("/")
 def home():
-    panel = zones.panel_cupos()
-    total_ocupados = sum(z["ocupados"] for z in panel)
-    return render_template("home.html", panel=panel, total_ocupados=total_ocupados)
+    """Portada pública. Con sesión iniciada, cada rol va directo a su pantalla."""
+    if session.get("rol"):
+        return redirect(_inicio_del_rol())
+    return render_template("home.html", panel=zones.panel_cupos())
 
 
 # ---------------------------------------------------------------
-# Login y autenticación con email
+# Inicio de sesión único: correo (conductores) o usuario del personal
 # ---------------------------------------------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    if session.get("rol"):
+        return redirect(_inicio_del_rol())
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
+        usuario = (request.form.get("usuario") or request.form.get("email") or "").strip().lower()
+        clave = request.form.get("password", "")
 
-        if not email:
-            flash("Por favor ingresa tu correo electrónico.", "danger")
-            return render_template("login.html")
+        if not usuario or not clave:
+            flash("Ingresa tu correo o usuario y tu contraseña.", "danger")
+            return render_template("login.html", usuario=usuario)
 
-        # Verificar si el email existe en la base de datos
-        conn = get_conn()
-        usuario = conn.execute(
-            "SELECT nombre, placa, email FROM usuarios WHERE LOWER(email) = ?",
-            (email,)
-        ).fetchone()
-        conn.close()
-
-        if usuario:
-            # Guardar información en la sesión
-            session['user_email'] = usuario['email']
-            session['user_name'] = usuario['nombre']
-            session['user_placa'] = usuario['placa']
-
-            flash(f"¡Bienvenido/a {usuario['nombre']}!", "success")
-
-            # Redirigir a la página solicitada o al dashboard
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
-            return redirect(url_for('dashboard'))
+        if usuario in auth.CUENTAS_PERSONAL:
+            if auth.verificar_personal(usuario, clave):
+                _iniciar_sesion(usuario, "Administrador" if usuario == "admin" else "Vigilante")
+                return redirect(_siguiente_seguro(_inicio_del_rol()))
         else:
-            flash("No existe un usuario registrado con ese correo electrónico. Por favor regístrate primero.", "danger")
-            return redirect(url_for('registro'))
+            conductor = auth.verificar_conductor(usuario, clave)
+            if conductor:
+                _iniciar_sesion("conductor", conductor["nombre"], placa=conductor["placa"], email=conductor["email"])
+                flash(f"¡Bienvenido/a, {conductor['nombre']}!", "success")
+                return redirect(_siguiente_seguro(url_for("dashboard")))
+            if auth.tiene_cuenta_sin_clave(usuario):
+                flash("Tu registro es anterior a las contraseñas: vuelve a registrar tu vehículo con la "
+                      "misma placa y el mismo correo para crear tu contraseña.", "warning")
+                return redirect(url_for("registro"))
+        # Mismo mensaje en todos los casos: no revela qué cuentas existen
+        flash("Usuario o contraseña incorrectos.", "danger")
+        return render_template("login.html", usuario=usuario)
 
     return render_template("login.html")
+
+
+@app.route("/personal")
+def login_personal():
+    """Dirección antigua del ingreso de personal: ahora todos entran por /login."""
+    return redirect(url_for("login", next=request.args.get("next")))
 
 
 @app.route("/logout")
@@ -174,18 +238,36 @@ def dashboard():
 # ---------------------------------------------------------------
 @app.route("/registro", methods=["GET", "POST"])
 def registro():
+    rol_actual = session.get("rol")
+    if rol_actual == "conductor":
+        flash("Ya tienes sesión iniciada. Para registrar otro vehículo, cierra sesión primero.", "info")
+        return redirect(url_for("dashboard"))
+    if rol_actual == "porteria":
+        abort(403)
     if request.method == "POST":
         nombre = request.form["nombre"].strip()
         placa = request.form["placa"].strip().upper()
         rol = request.form["rol"]
-        email = request.form.get("email", "").strip() or None
-        conn = get_conn()
-        ya_existia = conn.execute("SELECT 1 FROM usuarios WHERE placa = ?", (placa,)).fetchone()
-        conn.close()
+        email = request.form.get("email", "").strip()
+        clave = request.form.get("password", "")
         try:
+            if not placa_valida(placa):
+                raise ValueError("La placa debe tener entre 5 y 7 letras o números (ej. ABC123), sin espacios ni símbolos.")
+            if not email:
+                raise ValueError("El correo es obligatorio: con él inicias sesión.")
+            auth.validar_clave_nueva(clave, request.form.get("password2", ""))
+            existente = auth.datos_placa(placa)
+            if existente is not None:
+                # Nadie puede reescribir los datos de una placa ajena. Solo un registro antiguo
+                # (sin contraseña) puede crearla, y únicamente con el mismo correo.
+                if existente["password_hash"] or (existente["email"] or "").lower() != email.lower():
+                    raise ValueError(f"La placa {placa} ya está registrada. Si es tuya, inicia sesión.")
             generar_qr(nombre, placa, rol, email=email)
+            auth.guardar_clave(placa, clave)
             actualizar_cache()  # mantiene el caché de contingencia al día (M1-04)
-            flash("Placa ya registrada; QR regenerado." if ya_existia else f"QR generado para {placa}.", "success")
+            if rol_actual != "admin":  # el admin registra a nombre de otro y conserva su sesión
+                _iniciar_sesion("conductor", nombre, placa=placa, email=email)
+            flash("Contraseña creada; QR regenerado." if existente else f"QR generado para {placa}.", "success")
             return redirect(url_for("mi_qr", placa=placa))
         except ValueError as e:
             flash(str(e), "danger")
@@ -195,21 +277,58 @@ def registro():
 
 
 @app.route("/mi-qr/<placa>")
+@rol_requerido("conductor", "admin")
 def mi_qr(placa):
+    if session["rol"] != "admin" and not _es_dueno(placa):
+        abort(403)
     return render_template("mi_qr.html", placa=placa.upper())
+
+
+# ---------------------------------------------------------------
+# Resumen del administrador: lo más importante del día en una pantalla
+# ---------------------------------------------------------------
+@app.route("/resumen")
+@solo_admin
+def resumen_admin():
+    hoy = datetime.now().strftime("%Y-%m-%d")
+    panel = zones.panel_cupos()
+    conn = get_conn()
+    reservas_hoy = conn.execute(
+        "SELECT COUNT(*) FROM reservas WHERE fecha = ? AND estado IN ('activa','usada')", (hoy,)
+    ).fetchone()[0]
+    movimientos = conn.execute(
+        """SELECT r.placa, r.tipo, r.metodo, r.zona, r.timestamp, u.nombre
+           FROM registros r LEFT JOIN usuarios u ON u.placa = r.placa
+           ORDER BY r.id DESC LIMIT 8"""
+    ).fetchall()
+    conn.close()
+    return render_template(
+        "resumen.html",
+        panel=panel,
+        dentro=sum(z["ocupados"] for z in panel),
+        libres=sum(z["disponibles"] for z in panel),
+        reservas_hoy=reservas_hoy,
+        sin_reserva=len(reservations.reporte_sin_reserva(hoy)),
+        zonas_llenas=[z["zona"] for z in panel if z["alerta_llena"]],
+        movimientos=[dict(m) for m in movimientos],
+    )
 
 
 # ---------------------------------------------------------------
 # Listado de todos los usuarios/vehículos registrados
 # ---------------------------------------------------------------
 @app.route("/usuarios")
+@solo_admin
 def usuarios_registrados():
     return render_template("usuarios.html", usuarios=listar_usuarios())
 
 
 @app.route("/qr-imagen/<placa>")
+@rol_requerido("conductor", "admin")
 def qr_imagen(placa):
-    ruta = os.path.join(DATA_DIR, "qrcodes", f"{placa.upper()}.png")
+    if session["rol"] != "admin" and not _es_dueno(placa):
+        abort(403)
+    ruta =os.path.join(DATA_DIR, "qrcodes", f"{placa.upper()}.png")
     if not os.path.exists(ruta):
         return "QR no encontrado", 404
     with open(ruta, "rb") as f:
@@ -220,6 +339,7 @@ def qr_imagen(placa):
 # Sprint 1 — M1-02/M1-03: validador del vigilante (+ M2 zona / M3 reserva)
 # ---------------------------------------------------------------
 @app.route("/vigilante", methods=["GET", "POST"])
+@solo_porteria
 def vigilante():
     resultado = None
     zonas_disp = zones.listar_zonas()
@@ -238,6 +358,7 @@ def vigilante():
 # Sprint 1 — M1-04: modo de contingencia
 # ---------------------------------------------------------------
 @app.route("/contingencia", methods=["GET", "POST"])
+@solo_porteria
 def contingencia():
     resultado = None
     if request.method == "POST":
@@ -251,6 +372,7 @@ def contingencia():
 # Sprint 2 — M2-01: administración de zonas
 # ---------------------------------------------------------------
 @app.route("/zonas", methods=["GET", "POST"])
+@solo_admin
 def zonas_admin():
     if request.method == "POST":
         nombre = request.form["nombre"].strip()
@@ -267,6 +389,7 @@ def zonas_admin():
 # Sprint 2 — M2-02/M2-03/M2-06: panel de portería (auto-refresh)
 # ---------------------------------------------------------------
 @app.route("/panel")
+@solo_porteria
 def panel():
     return render_template("panel.html")
 
@@ -288,6 +411,7 @@ def disponibilidad():
 # Sprint 2 — M2-05: métrica histórica de ocupación
 # ---------------------------------------------------------------
 @app.route("/metricas")
+@solo_admin
 def metricas():
     return render_template("metricas.html", datos=zones.metrica_historica())
 
@@ -307,7 +431,8 @@ def reservar():
         hora_fin = request.form["hora_fin"]
         try:
             reservations.crear_reserva(placa, zona, fecha, hora_inicio, hora_fin, enviar_confirmacion=True)
-            flash(f"¡Reserva creada exitosamente! Revisa tu correo para ver la confirmación.", "success")
+            flash("¡Reserva creada! Revisa tu correo para ver la confirmación." if EmailConfig.is_configured()
+                  else "¡Reserva creada!", "success")
         except ValueError as e:
             flash(str(e), "danger")
             return render_template("reservar.html", zonas=zones.listar_zonas(), placa=placa)
@@ -318,7 +443,10 @@ def reservar():
 
 
 @app.route("/mis-reservas/<placa>")
+@rol_requerido("conductor", "admin")
 def mis_reservas(placa):
+    if session["rol"] != "admin" and not _es_dueno(placa):
+        abort(403)
     liberadas = reservations.liberar_no_shows()
     conn = get_conn()
     filas = conn.execute(
@@ -332,6 +460,7 @@ def mis_reservas(placa):
 # Sprint 3 — M3-04: historial exportable
 # ---------------------------------------------------------------
 @app.route("/historial", methods=["GET", "POST"])
+@solo_admin
 def historial():
     placa = request.values.get("placa") or None
     filas = historial_por_placa(placa) if placa else []
@@ -339,6 +468,7 @@ def historial():
 
 
 @app.route("/historial/csv")
+@solo_admin
 def historial_csv_export():
     placa = request.args.get("placa") or None
     csv_data = reservations.historial_csv(placa=placa)
@@ -352,6 +482,7 @@ def historial_csv_export():
 # Sprint 3 — M3-05: reporte de seguridad
 # ---------------------------------------------------------------
 @app.route("/reporte-seguridad")
+@solo_porteria
 def reporte_seguridad():
     fecha = request.args.get("fecha") or datetime.now().strftime("%Y-%m-%d")
     filas = reservations.reporte_sin_reserva(fecha)
@@ -362,17 +493,24 @@ def reporte_seguridad():
 # Cancelar reservas y dar de baja / reactivar vehículos
 # ---------------------------------------------------------------
 @app.route("/reservas/<int:reserva_id>/cancelar", methods=["POST"])
+@rol_requerido("conductor", "admin")
 def cancelar_reserva(reserva_id):
+    conn = get_conn()
+    fila = conn.execute("SELECT placa FROM reservas WHERE id = ?", (reserva_id,)).fetchone()
+    conn.close()
+    if fila and session["rol"] != "admin" and not _es_dueno(fila["placa"]):
+        abort(403)
     try:
         placa = reservations.cancelar_reserva(reserva_id)
         flash("Reserva cancelada. El cupo quedó libre.", "success")
         return redirect(url_for("mis_reservas", placa=placa))
     except ValueError as e:
         flash(str(e), "danger")
-        return redirect(url_for("reservar"))
+        return redirect(url_for("reservar") if session["rol"] == "conductor" else url_for("usuarios_registrados"))
 
 
 @app.route("/vehiculos/<placa>/estado", methods=["POST"])
+@solo_admin
 def estado_vehiculo(placa):
     activo = request.form.get("activo") == "1"
     try:
@@ -388,6 +526,7 @@ def estado_vehiculo(placa):
 # Medición del tiempo de ingreso y aceptación del sponsor
 # ---------------------------------------------------------------
 @app.route("/medicion", methods=["GET", "POST"])
+@solo_admin
 def medicion():
     if request.method == "POST":
         accion = request.form.get("accion", "registrar")
@@ -409,6 +548,7 @@ def medicion():
 
 
 @app.route("/medicion/csv")
+@solo_admin
 def medicion_csv():
     return Response(
         aceptacion.csv_mediciones(), mimetype="text/csv",
@@ -417,6 +557,7 @@ def medicion_csv():
 
 
 @app.route("/api/medicion")
+@solo_admin
 def api_medicion():
     return jsonify(aceptacion.evaluar())
 
@@ -425,12 +566,14 @@ def api_medicion():
 # Sprint 3 - M3-06: estado del scheduler y configuración de email
 # ---------------------------------------------------------------
 @app.route("/scheduler-status")
+@solo_admin
 def scheduler_status():
     estado = estado_scheduler()
     return jsonify(estado)
 
 
 @app.route("/sistema")
+@solo_admin
 def sistema():
     email_cfg = {
         "host": EmailConfig.SMTP_HOST,
@@ -443,6 +586,7 @@ def sistema():
 
 
 @app.route("/sistema/probar-email", methods=["POST"])
+@solo_admin
 def sistema_probar_email():
     if not EmailConfig.is_configured():
         flash("El envío de correos no está configurado: define SMTP_USER y SMTP_PASSWORD en el archivo .env.", "warning")

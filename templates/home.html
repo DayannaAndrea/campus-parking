@@ -1,26 +1,21 @@
 {% extends "base.html" %}
 {% import "macros.html" as ui %}
-{% block title %}Inicio — Campus Parking{% endblock %}
+{% block title %}Campus Parking{% endblock %}
 {% block content %}
-{% set total_libres = panel | sum(attribute='disponibles') %}
-{% set total_aforo = panel | sum(attribute='aforo_maximo') %}
-
-<div class="hero-cp mb-4">
-  <h1>Sistema de Control de Entradas y Cupos</h1>
-  <p>Verificación por QR, cupos en tiempo real y reservas por horario — todo en un solo sistema.</p>
-  <div class="hero-stats">
-    <div class="hero-stat"><b>{{ total_ocupados }}</b><span>ocupados</span></div>
-    <div class="hero-stat"><b>{{ total_libres }}</b><span>cupos libres</span></div>
-    <div class="hero-stat"><b>{{ total_aforo }}</b><span>aforo total</span></div>
+<section class="portada">
+  <h1>Parquea en el campus sin filas</h1>
+  <p>Registra tu vehículo, muestra tu código QR en portería y reserva tu cupo por horario.</p>
+  <div class="d-flex flex-wrap gap-2 mt-3">
+    <a href="{{ url_for('login') }}" class="btn btn-cp px-4">Iniciar sesión</a>
+    <a href="{{ url_for('registro') }}" class="btn btn-ghost px-4">Registrar vehículo</a>
   </div>
-</div>
+</section>
 
-<h5 class="fw-bold mb-3">Estado actual por zona</h5>
-<div class="row g-3 mb-4">
+<h5 class="fw-bold mt-4 mb-3">Cupos libres ahora</h5>
+<div class="row g-3 mb-2">
   {% for z in panel %}
-  <div class="col-md-4 col-lg-3">
+  <div class="col-sm-6 col-lg-4">
     <div class="zona-card {{ 'llena' if z.alerta_llena else 'dentro' }}" data-zona="{{ z.zona }}">
-      <span class="zona-tag">Zona</span>
       <h4 class="fw-bold mb-1">{{ z.zona }}</h4>
       <p class="zona-count mb-2" data-count>{{ z.disponibles }}<small class="ms-1">libres</small></p>
       <div class="d-flex justify-content-between mb-1">
@@ -37,42 +32,7 @@
   </div>
   {% endfor %}
 </div>
-
-<div class="row g-3 mb-4">
-  <div class="col-md-4">
-    <div class="card-cp p-4 h-100 d-flex flex-column">
-      <h5>Conductor</h5>
-      <p class="text-muted flex-grow-1">Genera tu QR, consulta si hay cupo y reserva una franja horaria.</p>
-      <div class="d-flex flex-column gap-2">
-        <a href="{{ url_for('registro') }}" class="btn btn-cp w-100">Registrar vehículo y QR</a>
-        <a href="{{ url_for('disponibilidad') }}" class="btn btn-ghost w-100">Ver disponibilidad</a>
-        <a href="{{ url_for('reservar') }}" class="btn btn-ghost w-100">Reservar cupo</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card-cp p-4 h-100 d-flex flex-column">
-      <h5>Portería</h5>
-      <p class="text-muted flex-grow-1">Valida el QR del vehículo y sigue los cupos en tiempo real.</p>
-      <div class="d-flex flex-column gap-2">
-        <a href="{{ url_for('vigilante') }}" class="btn btn-cp w-100">Validador</a>
-        <a href="{{ url_for('panel') }}" class="btn btn-ghost w-100">Panel de cupos</a>
-        <a href="{{ url_for('contingencia') }}" class="btn btn-ghost w-100">Modo contingencia</a>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card-cp p-4 h-100 d-flex flex-column">
-      <h5>Administración</h5>
-      <p class="text-muted flex-grow-1">Consulta registros y reportes, configura las zonas y mide el tiempo de ingreso.</p>
-      <div class="d-flex flex-column gap-2">
-        <a href="{{ url_for('usuarios_registrados') }}" class="btn btn-cp w-100">Vehículos registrados</a>
-        <a href="{{ url_for('reporte_seguridad') }}" class="btn btn-ghost w-100">Reporte de seguridad</a>
-        <a href="{{ url_for('medicion') }}" class="btn btn-ghost w-100">Medición de ingreso</a>
-      </div>
-    </div>
-  </div>
-</div>
+<p class="text-muted small">Se actualiza solo cada 5 segundos.</p>
 {% endblock %}
 
 {% block scripts %}

@@ -21,15 +21,25 @@
     <div class="mb-3">
       <label class="form-label">Correo institucional</label>
       <input type="email" class="form-control" name="email" placeholder="nombre@correo.edu" required>
-      <div class="form-hint">Se usa para los recordatorios de reserva (M3-06).</div>
+      <div class="form-hint">Con él inicias sesión y recibes los recordatorios de reserva (M3-06).</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contraseña</label>
+      <input type="password" class="form-control" name="password" minlength="8" required autocomplete="new-password">
+      <div class="form-hint">Mínimo 8 caracteres. Con tu correo y esta contraseña inicias sesión.</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Repite la contraseña</label>
+      <input type="password" class="form-control" name="password2" minlength="8" required autocomplete="new-password">
     </div>
     <div class="mb-4">
-      <label class="form-label">Rol</label>
+      <label class="form-label">Tipo de conductor</label>
       <select class="form-select" name="rol">
         <option value="estudiante">Estudiante</option>
         <option value="profesor">Profesor</option>
-        <option value="administrativo">Administrativo</option>
+        <option value="administrativo">Funcionario administrativo</option>
       </select>
+      <div class="form-hint">Solo describe quién eres en la universidad; no da permisos en el sistema.</div>
     </div>
     <button type="submit" class="btn btn-cp w-100">Generar QR</button>
   </form>

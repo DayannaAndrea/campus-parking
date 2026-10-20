@@ -70,6 +70,7 @@
   </small>
 </div>
 
+<div class="table-responsive">
 <table class="table-cp table mb-0">
   <thead><tr><th>Día</th><th>Vehículos</th><th>Promedio (min)</th><th>Resultado</th></tr></thead>
   <tbody>
@@ -79,8 +80,8 @@
       <td>{{ d.vehiculos }}</td>
       <td>{{ d.promedio_min }}</td>
       <td>
-        {% if d.cumple %}<span class="badge bg-success">Cumple</span>
-        {% else %}<span class="badge bg-secondary">{{ d.motivo|capitalize }}</span>{% endif %}
+        {% if d.cumple %}{{ ui.badge('Cumple', 'success') }}
+        {% else %}{{ ui.badge(d.motivo|capitalize, 'secondary') }}{% endif %}
       </td>
     </tr>
     {% else %}
@@ -88,6 +89,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 
 <script>
 let inicio = null, timer = null;

@@ -4,7 +4,7 @@
 {% block content %}
 {{ ui.page_header('Reservas de ' ~ placa) }}
 
-{% if liberadas %}
+{% if liberadas and session.get('rol') == 'admin' %}
 <div class="alert alert-warning alert-dismissible fade show" role="alert">
   Se liberaron automáticamente {{ liberadas }} reserva(s) vencida(s) sin uso (no-show) en todo el sistema.
   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
@@ -60,5 +60,9 @@
   </div>
 </div>
 
+{% if session.get('rol') == 'conductor' %}
 <a href="{{ url_for('reservar') }}" class="btn btn-cp mt-3">Nueva reserva</a>
+{% else %}
+<a href="{{ url_for('usuarios_registrados') }}" class="btn btn-ghost mt-3">Volver a vehículos registrados</a>
+{% endif %}
 {% endblock %}

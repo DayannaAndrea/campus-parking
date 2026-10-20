@@ -35,7 +35,8 @@ def test_registro_web_muestra_error_de_placa(bd_temporal):
 
 def test_vigilante_no_permite_path_traversal(bd_temporal):
     import flask_app
-    c = flask_app.app.test_client()
+    from tests.conftest import iniciar_sesion
+    c = iniciar_sesion(flask_app.app.test_client(), "porteria")
     r = c.post("/vigilante", data={"placa": "../../etc/passwd"})
     assert r.status_code == 200 and b"root:" not in r.data
 

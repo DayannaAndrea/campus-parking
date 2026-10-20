@@ -38,6 +38,10 @@ def init_db():
         conn.execute("ALTER TABLE usuarios ADD COLUMN email TEXT")
     except sqlite3.OperationalError:
         pass  # La columna ya existe
+    try:
+        conn.execute("ALTER TABLE usuarios ADD COLUMN password_hash TEXT")
+    except sqlite3.OperationalError:
+        pass  # La columna ya existe
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS registros (
